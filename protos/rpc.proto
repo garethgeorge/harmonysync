@@ -1,0 +1,10 @@
+
+message Response {
+  enum Status {
+    OK = 0;
+    ERROR = 1;
+  }
+  required Status status = 1;
+  optional string errorMessage = 2;
+  optional google.protobuf.Any response = 3;
+}
