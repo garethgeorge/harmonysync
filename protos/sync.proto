@@ -1,74 +1,28 @@
-import "google/protobuf/any.proto"
+syntax = "proto3";
 
-message Status {
-  enum StatusCode {
-    OK = 0;
-    ERROR_INTERNAL = 1;
-    ERROR_BAD_REQUEST = 2;
-  }
-
-  required StatusCode status = 1;
-  optional string error_message = 2;
+message SyncTime {
+  int64 server_time = 1;
 }
 
 message SyncState {
-  // times are in 
-  required int32 seq_no = 1; // monotomically incrementing sequence number for the state
-  required bool playing = 2;
-  required int64 last_sync_time = 3;
-  required int64 last_sync_position = 4;
-  required int64 server_current_time = 5;
+  int32 seq_no = 1;
+  bool playing = 2;
+  int64 last_sync_time = 3;
+  int64 last_sync_position = 4;
 }
 
-message RoomInfo {
-  required string room_host = 1;
-  required int64 room_id = 2;
-  required string room_password = 3;
-  required string room_name = 4;
+message SetSyncStateReq {
+  SyncState new_sync_state = 1;
 }
 
-// ==========================================
-// RPC DEFINITIONS 
-// ==========================================
-
-// create lobby rpc's
-message CreateRoomReq {
-  required string video_url = 1;
-}
-
-message CreateRoomResp {
-  required LobbyInfo lobby = 1;
-}
-
-// join lobby rpc's
-message JoinRoomReq {
-  required string lobby_id = 1;
-}
-
-message JoinRoomResp {
-  required LobbyInfo lobby = 1;
-}
-
-// set sync state rpc's
-message SetSyncStateRequest {
-  required SyncState new_sync_state = 1;
-}
-
-message SetSyncStateResponse {
+message SetSyncStateResp {
   enum Status {
-    ACCEPT = 0;
-    REJECT = 1;
+    REJECT = 0;
+    ACCEPT = 1;
   }
-  required Status status = 1;
+  Status status = 1;
 }
 
-// request a resync, ressponse will be issued only if client is out of sync 
-message ResyncRequest {
-  required int32 seq_no = 1;
-}
-
-// message new video 
-message RequestTransferToNewLobby {
-  required string desc;
-  required string lobby_id;
+message ResyncReq {
+  int32 seq_no = 1;
 }

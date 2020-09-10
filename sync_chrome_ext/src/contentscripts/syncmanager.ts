@@ -1,6 +1,7 @@
-import sync_pb from "../../build/protos/sync_pb";
-import io from "socket.io-client";
-import AsyncLock from "async-lock";
+import * as sync_pb from "../../build/protos/sync_pb";
+import * as AsyncLock from "async-lock";
+import * as rpcClient from "./rpc_util";
+import sleep from "./util";
 
 interface Player {
   getPlaybackPosition(): number;
@@ -9,90 +10,121 @@ interface Player {
   isBuffering(): boolean;
 
   setState(playing: boolean, position: number): void;
+  setSeekCallback(callback: any): void;
 }
 
-const getStatus = (message: any) => {
-  const data = message as Uint8Array;
-  return sync_pb.Status.deserializeBinary(data);
-}
+const stateGetPosition = (state: sync_pb.SyncState) => {
+  if (state.getPlaying()) {
+    return state.getLastSyncPosition() + (state.getLastSyncTime() - new Date().getTime()) / 1000;
+  } else return state.getLastSyncPosition();
+};
 
-const checkStatus = (message: any) => {
-  const status = getStatus(message);
-  if (status.getStatus() !== sync_pb.Status.StatusCode.OK) {
-    throw new Error(status.getErrorMessage());
+const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
+  // does the playback state differ?
+  if (a.getPlaying() != b.getPlaying()) {
+    return false;
   }
-}
+  // are they off by more than half a second?
+  if (Math.abs(stateGetPosition(a) - stateGetPosition(b)) > 0.5) {
+    return false;
+  }
+  return true;
+};
 
 class SyncManager {
   private player: Player;
   private socket: SocketIOClient.Socket;
-  private lobbyInfo: sync_pb.LobbyInfo;
-  private clientSyncState: sync_pb.SyncState;
   private serverSyncState?: sync_pb.SyncState;
 
   private lock: AsyncLock;
+  private clientSynchronizingWithServer: boolean;
 
-  constructor(lobbyInfo: sync_pb.LobbyInfo, socket: SocketIOClient.Socket, player: Player) {
+  constructor(socket: SocketIOClient.Socket, player: Player) {
     this.player = player;
     this.socket = socket;
-    this.lobbyInfo = lobbyInfo;
-    this.clientSyncState = new sync_pb.SyncState();
-    this.clientSyncState.setSeqNo(-1);
     this.serverSyncState = null;
 
     this.lock = new AsyncLock();
 
-    this.subscribeEvents(socket);
+    this.subscribeEvents();
   }
 
-  subscribeEvents(socket: SocketIOClient.Socket) {
-    if (socket != this.socket) 
-      throw new Error("can not attach to a different socket");
-    
-    // update our sync state 
-    this.socket.on("SyncState", (status, message) => {
-      checkStatus(status);
+  subscribeEvents() {
+    // update our sync state
+    this.socket.on("SyncState", (data) => {
+      const syncState = rpcClient.decodeResponse(data as Uint8Array, sync_pb.SyncState)
+        .response as sync_pb.SyncState;
+      this.serverSyncState = syncState;
+      this.applyServerSyncState().then(() => {
+        console.log("applied sync state");
+      });
+    });
 
-      const data = message as Uint8Array;
-      const serverSyncState = sync_pb.SyncState.deserializeBinary(data);
-      this.serverSyncState = serverSyncState;
-
-      // TODO: schedule applying the sync state
+    this.player.setSeekCallback(() => {
+      this.trySubmitSyncState();
     });
   }
 
   async requestResync() {
-    const req = new sync_pb.ResyncRequest();
+    const req = new sync_pb.ResyncReq();
     req.setSeqNo(this.serverSyncState.getSeqNo());
-    this.socket.emit("ResyncRequest", req);
+
+    this.socket.emit("RequestResync", rpcClient.packageRequest(req).serializeBinary());
   }
 
-  async submitSyncState() {
-    // TODO: determine how updating sync state should work... 
-    const resp = await this.lock.acquire("submit_sync_state", () => {
-      return new Promise((accept, reject) => {
-        const req = new sync_pb.SetSyncStateRequest()
-        req.setNewSyncState(this.clientSyncState);
-        this.socket.emit("SetSyncStateRequest", req.serializeBinary());
-        this.socket.once("SetSyncStateResponse", (status, message) => {
-          try {
-            checkStatus(status);
-
-            const data = message as Uint8Array;
-            const resp = sync_pb.SetSyncStateResponse.deserializeBinary(data);
-            accept(resp);
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
-    }) as sync_pb.SetSyncStateResponse;
-
-    if (resp.getStatus() == sync_pb.SetSyncStateResponse.Status.ACCEPT) {
-      // TODO: further refine the sync protocol and what it means... perhaps even draw an *mind blown* diagram
-      this.serverSyncState = this.clientSyncState;
+  async trySubmitSyncState() {
+    if (
+      this.clientSynchronizingWithServer ||
+      !this.serverSyncState ||
+      areStatesClose(this.computePlayerSyncState(), this.serverSyncState)
+    ) {
+      return;
     }
 
-    return resp;
+    console.log("client submitting local sync state to server with seqno: " + newState.getSeqNo());
+    const req = new sync_pb.SetSyncStateReq();
+    const resp = (await rpcClient.rpcInvoke(
+      this.socket,
+      "SetSyncState",
+      req,
+      sync_pb.SetSyncStateResp
+    )) as sync_pb.SetSyncStateResp;
+
+    // TODO: examine this logic carefully
+    if (resp.getStatus() == sync_pb.SetSyncStateResp.Status.ACCEPT) {
+      console.log("server accepted client's syncstate");
+      this.serverSyncState = newState;
+    } else {
+      console.log("server rejected client's syncstate -- we are out of sync");
+      this.serverSyncState = null;
+    }
+  }
+
+  computePlayerSyncState() {
+    if (!this.serverSyncState) {
+      throw new Error("can not set syncstate before receiving first sync from server");
+    }
+
+    const newSyncState = new sync_pb.SyncState();
+    newSyncState.setSeqNo(this.serverSyncState.getSeqNo());
+    newSyncState.setPlaying(this.player.isPlaying());
+    newSyncState.setLastSyncPosition(this.player.getPlaybackPosition());
+    newSyncState.setLastSyncTime(new Date().getTime());
+    newSyncState.setPlaying(this.player.isPlaying());
+    return newSyncState;
+  }
+
+  async applyServerSyncState() {
+    this.clientSynchronizingWithServer = true;
+    while (!areStatesClose(this.computePlayerSyncState(), this.serverSyncState)) {
+      this.player.setState(
+        this.serverSyncState.getPlaying(),
+        stateGetPosition(this.serverSyncState)
+      );
+      do {
+        await sleep(100);
+      } while (this.player.isBuffering() || this.player.isSeeking());
+    }
+    this.clientSynchronizingWithServer = false;
   }
 }

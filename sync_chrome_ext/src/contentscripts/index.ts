@@ -1,5 +1,5 @@
 import { stripWhiteSpace } from "./util";
 
-import AniOverlay from "./overlay";
+import SyncOverlay from "./overlays/twist_overlay";
 
-const overlay = new AniOverlay(window);
+const overlay = new SyncOverlay(window);

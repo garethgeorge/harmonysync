@@ -1,6 +1,6 @@
-import { stripWhiteSpace } from "./util";
+import { stripWhiteSpace } from "../util";
 
-export default class AniOverlay {
+export default class TwistSyncOverlay {
   private window: Window;
   constructor(window: Window) {
     this.window = window;
