@@ -61,36 +61,42 @@ export default class SyncManager {
   }
 
   async trySubmitSyncState() {
-    const newState = this.computePlayerSyncState();
-    if (!this.serverSyncState) {
-      console.log("serverSyncState is null, must wait for initialsync / resync to begin submitting our own state");
-      return;
-    }
-    if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
+    await this.lock.acquire("sync", async () => {
+      const newState = this.computePlayerSyncState();
+      if (!this.serverSyncState) {
+        console.log(
+          "serverSyncState is null, must wait for initialsync / resync to begin submitting our own state"
+        );
+        return;
+      }
+      if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
+        console.log(
+          "not submitting possible state change -- we are already synchronizing OR the states are too similar"
+        );
+        return;
+      }
+
       console.log(
-        "not submitting possible state change -- we are already synchronizing OR the states are too similar"
+        "client submitting local sync state to server with seqno: " + newState.getSeqNo()
       );
-      return;
-    }
+      const req = new sync_pb.SetSyncStateReq();
+      req.setNewSyncState(newState);
+      const resp = (await rpcClient.rpcInvoke(
+        this.socket,
+        "SetSyncState",
+        req,
+        sync_pb.SetSyncStateResp
+      )) as sync_pb.SetSyncStateResp;
 
-    console.log("client submitting local sync state to server with seqno: " + newState.getSeqNo());
-    const req = new sync_pb.SetSyncStateReq();
-    req.setNewSyncState(newState);
-    const resp = (await rpcClient.rpcInvoke(
-      this.socket,
-      "SetSyncState",
-      req,
-      sync_pb.SetSyncStateResp
-    )) as sync_pb.SetSyncStateResp;
-
-    if (resp.getStatus() == sync_pb.SetSyncStateResp.Status.ACCEPT) {
-      console.log("server accepted client's syncstate");
-      this.serverSyncState = newState;
-    } else {
-      console.log("server rejected client's syncstate -- we are out of sync");
-      this.serverSyncState = null;
-      this.requestResync();
-    }
+      if (resp.getStatus() == sync_pb.SetSyncStateResp.Status.ACCEPT) {
+        console.log("server accepted client's syncstate");
+        this.serverSyncState = newState;
+      } else {
+        console.log("server rejected client's syncstate -- we are out of sync");
+        this.serverSyncState = null;
+        this.requestResync();
+      }
+    });
   }
 
   computePlayerSyncState() {
@@ -104,7 +110,7 @@ export default class SyncManager {
   }
 
   async applyServerSyncState() {
-    await this.lock.acquire("applyServerSyncState", async () => {
+    await this.lock.acquire("sync", async () => {
       if (this.serverSyncState == null) {
         throw new Error("can not synchronize with null state");
       }
