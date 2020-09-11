@@ -52,9 +52,7 @@ export const rpcInvoke = (
   return new Promise((accept, reject) => {
     socket.once("error", reject);
     socket.emit(eventName, reqPkg.serializeBinary().buffer);
-    console.log("issued rpc: " + eventName);
     socket.once(eventName + ":" + reqPkg.getTrackingId(), (data) => {
-      console.log("rpc got response " + eventName);
       socket.removeListener("error", reject);
       try {
         accept(decodeResponse(new Uint8Array(data), responseDecoder).response);

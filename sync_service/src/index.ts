@@ -17,6 +17,7 @@ syncState.setSeqNo(0);
 
 io.on("connection", socket => {
   socket.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
+
   rpcUtil.attachRpcHandler(socket, "SetSyncState", sync_pb.SetSyncStateReq, (data: jspb.Message) => {
     const req = data as sync_pb.SetSyncStateReq;
     const newSyncState = req.getNewSyncState();
@@ -26,6 +27,9 @@ io.on("connection", socket => {
       syncState = newSyncState;
       const resp = new sync_pb.SetSyncStateResp();
       resp.setStatus(sync_pb.SetSyncStateResp.Status.ACCEPT);
+
+      io.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
+
       return resp;
     } else {
       console.log("\trejected request!");
@@ -34,6 +38,10 @@ io.on("connection", socket => {
       return resp;
     }
   });
+
+  socket.on("ResyncReq", () => {
+    socket.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
+  })
 })
 
 server.listen(3000, () => {

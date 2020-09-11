@@ -1,9 +1,5 @@
 syntax = "proto3";
 
-message SyncTime {
-  int64 server_time = 1;
-}
-
 message SyncState {
   int32 seq_no = 1;
   bool playing = 2;
@@ -21,8 +17,4 @@ message SetSyncStateResp {
     ACCEPT = 1;
   }
   Status status = 1;
-}
-
-message ResyncReq {
-  int32 seq_no = 1;
 }

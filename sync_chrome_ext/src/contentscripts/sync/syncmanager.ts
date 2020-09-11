@@ -57,14 +57,15 @@ export default class SyncManager {
   }
 
   async requestResync() {
-    const req = new sync_pb.ResyncReq();
-    req.setSeqNo(this.serverSyncState.getSeqNo());
-
-    this.socket.emit("RequestResync", rpcClient.packageRequest(req).serializeBinary().buffer);
+    this.socket.emit("ResyncReq");
   }
 
   async trySubmitSyncState() {
     const newState = this.computePlayerSyncState();
+    if (!this.serverSyncState) {
+      console.log("serverSyncState is null, must wait for initialsync / resync to begin submitting our own state");
+      return;
+    }
     if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
       console.log(
         "not submitting possible state change -- we are already synchronizing OR the states are too similar"
@@ -82,30 +83,23 @@ export default class SyncManager {
       sync_pb.SetSyncStateResp
     )) as sync_pb.SetSyncStateResp;
 
-    console.log("finished rpc invoke to submit sync state");
-
-    // TODO: examine this logic carefully
     if (resp.getStatus() == sync_pb.SetSyncStateResp.Status.ACCEPT) {
       console.log("server accepted client's syncstate");
       this.serverSyncState = newState;
     } else {
       console.log("server rejected client's syncstate -- we are out of sync");
       this.serverSyncState = null;
+      this.requestResync();
     }
   }
 
   computePlayerSyncState() {
-    if (!this.serverSyncState) {
-      throw new Error("can not set syncstate before receiving first sync from server");
-    }
-
     const newSyncState = new sync_pb.SyncState();
-    newSyncState.setSeqNo(this.serverSyncState.getSeqNo() + 1);
+    newSyncState.setSeqNo(this.serverSyncState ? this.serverSyncState.getSeqNo() + 1 : -1);
     newSyncState.setPlaying(this.player.isPlaying());
     newSyncState.setLastSyncPosition(this.player.getPlaybackPosition());
     newSyncState.setLastSyncTime(new Date().getTime());
     newSyncState.setPlaying(this.player.isPlaying());
-    console.log("COMPUTED SYNC STATE: ", newSyncState.toObject());
     return newSyncState;
   }
 
