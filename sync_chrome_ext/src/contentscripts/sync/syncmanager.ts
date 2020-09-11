@@ -77,7 +77,7 @@ export default class SyncManager {
       return;
     }
 
-    await sleep(200);
+    await sleep(100);
     await this.lock.acquire("sync", async () => {
       const newState = this.computePlayerSyncState();
       if (!this.canSubmitSyncState()) {
