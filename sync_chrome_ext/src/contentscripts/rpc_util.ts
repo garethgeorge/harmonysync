@@ -1,4 +1,4 @@
-import * as SocketIOClient from "socket.io-client";
+import * as io from "socket.io-client";
 import * as rpc from "../../build/protos/rpc_pb";
 import * as jspb from "google-protobuf";
 
@@ -51,14 +51,35 @@ export const rpcInvoke = (
   const reqPkg = packageRequest(request);
   return new Promise((accept, reject) => {
     socket.once("error", reject);
-    socket.emit(eventName, reqPkg.serializeBinary());
+    socket.emit(eventName, reqPkg.serializeBinary().buffer);
+    console.log("issued rpc: " + eventName);
     socket.once(eventName + ":" + reqPkg.getTrackingId(), (data) => {
-      socket.removeEventListener("error", reject);
+      console.log("rpc got response " + eventName);
+      socket.removeListener("error", reject);
       try {
-        accept(decodeResponse(data as Uint8Array, responseDecoder).response);
+        accept(decodeResponse(new Uint8Array(data), responseDecoder).response);
       } catch (e) {
         reject(e);
       }
     });
   });
 };
+
+export const attachRpcHandler = (socket: SocketIOClient.Socket, eventName: string, requestDecoder: typeof jspb.Message, handler: (request: jspb.Message) => jspb.Message) => {
+  socket.on(eventName, (data) => {
+    if (!(data instanceof ArrayBuffer)) {
+      console.error(`rpc handler(${eventName}): received non ArrayBuffer request: `, data);
+      return;
+    }
+
+    const reqPkg = rpc.Request.deserializeBinary(new Uint8Array(data));
+    const req = requestDecoder.deserializeBinary(reqPkg.getRequest_asU8());
+    try {
+      const res = handler(req);
+      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageResponse(res, reqPkg.getTrackingId()).serializeBinary().buffer);
+    } catch (e) {
+      console.error(e);
+      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageErrorResponse(e.toString(), reqPkg.getTrackingId()).serializeBinary().buffer);
+    }
+  })
+}

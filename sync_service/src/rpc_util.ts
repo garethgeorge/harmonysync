@@ -65,14 +65,19 @@ export const rpcInvoke = (
 
 export const attachRpcHandler = (socket: SocketIO.Socket, eventName: string, requestDecoder: typeof jspb.Message, handler: (request: jspb.Message) => jspb.Message) => {
   socket.on(eventName, (data) => {
-    const reqPkg = rpc.Request.deserializeBinary(data as Uint8Array);
+    if (!(data instanceof Uint8Array)) {
+      console.error(`rpc handler(${eventName}): received non ArrayBuffer request: `, data);
+      return;
+    }
+
+    const reqPkg = rpc.Request.deserializeBinary(data);
     const req = requestDecoder.deserializeBinary(reqPkg.getRequest_asU8());
     try {
       const res = handler(req);
-      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageResponse(res, reqPkg.getTrackingId()));
+      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageResponse(res, reqPkg.getTrackingId()).serializeBinary().buffer);
     } catch (e) {
       console.error(e);
-      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageErrorResponse(e.toString(), reqPkg.getTrackingId()));
+      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageErrorResponse(e.toString(), reqPkg.getTrackingId()).serializeBinary().buffer);
     }
   })
 }

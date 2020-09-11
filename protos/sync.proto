@@ -8,7 +8,7 @@ message SyncState {
   int32 seq_no = 1;
   bool playing = 2;
   int64 last_sync_time = 3;
-  int64 last_sync_position = 4;
+  double last_sync_position = 4;
 }
 
 message SetSyncStateReq {

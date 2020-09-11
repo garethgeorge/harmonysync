@@ -16,11 +16,11 @@ syncState.setLastSyncPosition(0);
 syncState.setSeqNo(0);
 
 io.on("connection", socket => {
-  socket.emit("SyncState", rpcUtil.packageResponse(syncState));
+  socket.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
   rpcUtil.attachRpcHandler(socket, "SetSyncState", sync_pb.SetSyncStateReq, (data: jspb.Message) => {
     const req = data as sync_pb.SetSyncStateReq;
     const newSyncState = req.getNewSyncState();
-    console.log("received request to set server sync state to ", newSyncState);
+    console.log("received request to set server sync state to ", newSyncState.toObject());
     if (newSyncState.getSeqNo() === syncState.getSeqNo() + 1) {
       console.log("\taccepted request!");
       syncState = newSyncState;

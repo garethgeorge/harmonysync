@@ -6,7 +6,7 @@ import { Player } from "./player";
 
 const stateGetPosition = (state: sync_pb.SyncState) => {
   if (state.getPlaying()) {
-    return state.getLastSyncPosition() + (state.getLastSyncTime() - new Date().getTime()) / 1000;
+    return state.getLastSyncPosition() + (new Date().getTime() - state.getLastSyncTime()) / 1000;
   } else return state.getLastSyncPosition();
 };
 
@@ -42,8 +42,9 @@ export default class SyncManager {
   subscribeEvents() {
     // update our sync state
     this.socket.on("SyncState", (data) => {
-      const syncState = rpcClient.decodeResponse(data as Uint8Array, sync_pb.SyncState)
+      const syncState = rpcClient.decodeResponse(new Uint8Array(data), sync_pb.SyncState)
         .response as sync_pb.SyncState;
+      console.log("got new SyncState from server: ", syncState.toObject());
       this.serverSyncState = syncState;
       this.applyServerSyncState().then(() => {
         console.log("applied sync state");
@@ -59,15 +60,12 @@ export default class SyncManager {
     const req = new sync_pb.ResyncReq();
     req.setSeqNo(this.serverSyncState.getSeqNo());
 
-    this.socket.emit("RequestResync", rpcClient.packageRequest(req).serializeBinary());
+    this.socket.emit("RequestResync", rpcClient.packageRequest(req).serializeBinary().buffer);
   }
 
   async trySubmitSyncState() {
     const newState = this.computePlayerSyncState();
-    if (
-      this.clientSynchronizingWithServer ||
-      areStatesClose(newState, this.serverSyncState)
-    ) {
+    if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
       console.log(
         "not submitting possible state change -- we are already synchronizing OR the states are too similar"
       );
@@ -83,6 +81,8 @@ export default class SyncManager {
       req,
       sync_pb.SetSyncStateResp
     )) as sync_pb.SetSyncStateResp;
+
+    console.log("finished rpc invoke to submit sync state");
 
     // TODO: examine this logic carefully
     if (resp.getStatus() == sync_pb.SetSyncStateResp.Status.ACCEPT) {
@@ -100,33 +100,49 @@ export default class SyncManager {
     }
 
     const newSyncState = new sync_pb.SyncState();
-    newSyncState.setSeqNo(this.serverSyncState.getSeqNo());
+    newSyncState.setSeqNo(this.serverSyncState.getSeqNo() + 1);
     newSyncState.setPlaying(this.player.isPlaying());
     newSyncState.setLastSyncPosition(this.player.getPlaybackPosition());
     newSyncState.setLastSyncTime(new Date().getTime());
     newSyncState.setPlaying(this.player.isPlaying());
+    console.log("COMPUTED SYNC STATE: ", newSyncState.toObject());
     return newSyncState;
   }
 
   async applyServerSyncState() {
-    if (this.serverSyncState == null) {
-      throw new Error("can not synchronize with null state");
-    }
+    await this.lock.acquire("applyServerSyncState", async () => {
+      if (this.serverSyncState == null) {
+        throw new Error("can not synchronize with null state");
+      }
 
-    this.clientSynchronizingWithServer = true;
-    const desiredState = this.serverSyncState;
-    while (
-      desiredState == this.serverSyncState &&
-      !areStatesClose(this.computePlayerSyncState(), desiredState)
-    ) {
-      this.player.setState(
-        this.serverSyncState.getPlaying(),
-        stateGetPosition(this.serverSyncState)
+      this.clientSynchronizingWithServer = true;
+      console.log(
+        "starting synchronizing with latest server syncstate: " + this.serverSyncState.getSeqNo()
       );
-      do {
-        await sleep(100);
-      } while (desiredState == this.serverSyncState && this.player.isBuffering());
-    }
-    this.clientSynchronizingWithServer = false;
+      const desiredState = this.serverSyncState;
+      while (
+        desiredState == this.serverSyncState &&
+        !areStatesClose(this.computePlayerSyncState(), desiredState)
+      ) {
+        console.log(
+          "calling player setState: (playing = " +
+            this.serverSyncState.getPlaying() +
+            ", position = " +
+            stateGetPosition(this.serverSyncState) +
+            ")"
+        );
+        this.player.setState(
+          this.serverSyncState.getPlaying(),
+          stateGetPosition(this.serverSyncState)
+        );
+        do {
+          await sleep(100);
+        } while (desiredState == this.serverSyncState && this.player.isBuffering());
+      }
+      this.clientSynchronizingWithServer = false;
+      console.log(
+        "done synchronizing with latest server syncstate: " + this.serverSyncState.getSeqNo()
+      );
+    });
   }
 }
