@@ -16,6 +16,7 @@ exports.tsc_contentscript = function tsc_contentscript() {
       ts({
         target: "es6",
         moduleResolution: "node",
+        allowSyntheticDefaultImports: true,
       })
     )
     .pipe(terser())

@@ -1,10 +1,11 @@
 import io from "socket.io-client";
+import {Player, BasicWebVideoPlayer} from "./player";
 
 export default interface Overlay {
   constructor(window: Window);
   canHandlePage(): boolean;
   name(): string;
-  startSyncing(socket: io.Socket): void;
+  getPlayer(): Player;
 }
 
 export default class BaseOverlay implements Overlay {
@@ -21,13 +22,21 @@ export default class BaseOverlay implements Overlay {
     return "BASE OVERLAY";
   }
 
-  startSyncing(socket: io.Socket) {
+  getPlayer() {
+    const mediaElement = this.findVideoPlayer();
+    if (!mediaElement) {
+      throw new Error("could not find the HTML video player object");
+    }
+    return new BasicWebVideoPlayer(mediaElement)
   }
 
-  findVideoPlayer(): HTMLElement {
+  //
+  // Helper Methods for internal interface
+  //
+  protected findVideoPlayer(): HTMLMediaElement {
     const videoPlayer = this.window.document.querySelector("video");
     if (!videoPlayer)
       return null;
-    return videoPlayer;
+    return videoPlayer as HTMLMediaElement;
   }
 }

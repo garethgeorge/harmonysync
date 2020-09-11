@@ -1,17 +1,8 @@
-import * as sync_pb from "../../build/protos/sync_pb";
+import * as sync_pb from "../../../build/protos/sync_pb";
 import * as AsyncLock from "async-lock";
-import * as rpcClient from "./rpc_util";
-import sleep from "./util";
-
-interface Player {
-  getPlaybackPosition(): number;
-  isPlaying(): boolean;
-  isSeeking(): boolean;
-  isBuffering(): boolean;
-
-  setState(playing: boolean, position: number): void;
-  setSeekCallback(callback: any): void;
-}
+import * as rpcClient from "../rpc_util";
+import { sleep } from "../util";
+import { Player } from "./player";
 
 const stateGetPosition = (state: sync_pb.SyncState) => {
   if (state.getPlaying()) {
@@ -31,7 +22,7 @@ const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
   return true;
 };
 
-class SyncManager {
+export default class SyncManager {
   private player: Player;
   private socket: SocketIOClient.Socket;
   private serverSyncState?: sync_pb.SyncState;
@@ -45,7 +36,6 @@ class SyncManager {
     this.serverSyncState = null;
 
     this.lock = new AsyncLock();
-
     this.subscribeEvents();
   }
 
@@ -58,10 +48,10 @@ class SyncManager {
       this.applyServerSyncState().then(() => {
         console.log("applied sync state");
       });
-    });
 
-    this.player.setSeekCallback(() => {
-      this.trySubmitSyncState();
+      this.player.setStateChangeCallback(() => {
+        this.trySubmitSyncState();
+      });
     });
   }
 
@@ -73,16 +63,20 @@ class SyncManager {
   }
 
   async trySubmitSyncState() {
+    const newState = this.computePlayerSyncState();
     if (
       this.clientSynchronizingWithServer ||
-      !this.serverSyncState ||
-      areStatesClose(this.computePlayerSyncState(), this.serverSyncState)
+      areStatesClose(newState, this.serverSyncState)
     ) {
+      console.log(
+        "not submitting possible state change -- we are already synchronizing OR the states are too similar"
+      );
       return;
     }
 
     console.log("client submitting local sync state to server with seqno: " + newState.getSeqNo());
     const req = new sync_pb.SetSyncStateReq();
+    req.setNewSyncState(newState);
     const resp = (await rpcClient.rpcInvoke(
       this.socket,
       "SetSyncState",
@@ -115,15 +109,23 @@ class SyncManager {
   }
 
   async applyServerSyncState() {
+    if (this.serverSyncState == null) {
+      throw new Error("can not synchronize with null state");
+    }
+
     this.clientSynchronizingWithServer = true;
-    while (!areStatesClose(this.computePlayerSyncState(), this.serverSyncState)) {
+    const desiredState = this.serverSyncState;
+    while (
+      desiredState == this.serverSyncState &&
+      !areStatesClose(this.computePlayerSyncState(), desiredState)
+    ) {
       this.player.setState(
         this.serverSyncState.getPlaying(),
         stateGetPosition(this.serverSyncState)
       );
       do {
         await sleep(100);
-      } while (this.player.isBuffering() || this.player.isSeeking());
+      } while (desiredState == this.serverSyncState && this.player.isBuffering());
     }
     this.clientSynchronizingWithServer = false;
   }
