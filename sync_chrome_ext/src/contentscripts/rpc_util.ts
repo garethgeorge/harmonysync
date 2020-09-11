@@ -63,7 +63,12 @@ export const rpcInvoke = (
   });
 };
 
-export const attachRpcHandler = (socket: SocketIOClient.Socket, eventName: string, requestDecoder: typeof jspb.Message, handler: (request: jspb.Message) => jspb.Message) => {
+export const attachRpcHandler = (
+  socket: SocketIOClient.Socket,
+  eventName: string,
+  requestDecoder: typeof jspb.Message,
+  handler: (request: jspb.Message) => jspb.Message
+) => {
   socket.on(eventName, (data) => {
     if (!(data instanceof ArrayBuffer)) {
       console.error(`rpc handler(${eventName}): received non ArrayBuffer request: `, data);
@@ -74,10 +79,16 @@ export const attachRpcHandler = (socket: SocketIOClient.Socket, eventName: strin
     const req = requestDecoder.deserializeBinary(reqPkg.getRequest_asU8());
     try {
       const res = handler(req);
-      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageResponse(res, reqPkg.getTrackingId()).serializeBinary().buffer);
+      socket.emit(
+        eventName + ":" + reqPkg.getTrackingId(),
+        packageResponse(res, reqPkg.getTrackingId()).serializeBinary().buffer
+      );
     } catch (e) {
       console.error(e);
-      socket.emit(eventName + ":" + reqPkg.getTrackingId(), packageErrorResponse(e.toString(), reqPkg.getTrackingId()).serializeBinary().buffer);
+      socket.emit(
+        eventName + ":" + reqPkg.getTrackingId(),
+        packageErrorResponse(e.toString(), reqPkg.getTrackingId()).serializeBinary().buffer
+      );
     }
-  })
-}
+  });
+};

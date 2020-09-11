@@ -16,7 +16,7 @@ const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
     return false;
   }
   // are they off by more than half a second?
-  if (Math.abs(stateGetPosition(a) - stateGetPosition(b)) > 0.5) {
+  if (Math.abs(stateGetPosition(a) - stateGetPosition(b)) > 1) {
     return false;
   }
   return true;
@@ -60,19 +60,28 @@ export default class SyncManager {
     this.socket.emit("ResyncReq");
   }
 
+  canSubmitSyncState(): boolean {
+    if (!this.serverSyncState) {
+      return false;
+    }
+    const newState = this.computePlayerSyncState();
+    if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
+      return false;
+    }
+    return true;
+  }
+
   async trySubmitSyncState() {
+    if (!this.canSubmitSyncState()) {
+      console.log("syncstate should not be submitted -- we are out of sync");
+      return;
+    }
+
+    await sleep(200);
     await this.lock.acquire("sync", async () => {
       const newState = this.computePlayerSyncState();
-      if (!this.serverSyncState) {
-        console.log(
-          "serverSyncState is null, must wait for initialsync / resync to begin submitting our own state"
-        );
-        return;
-      }
-      if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
-        console.log(
-          "not submitting possible state change -- we are already synchronizing OR the states are too similar"
-        );
+      if (!this.canSubmitSyncState()) {
+        console.log("syncstate should not be submitted -- we are out of sync");
         return;
       }
 
