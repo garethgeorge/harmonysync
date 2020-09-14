@@ -19,7 +19,7 @@ export class BasicWebVideoPlayer implements Player {
     });
     this.video.addEventListener("playing", () => {
       this.buffering = false;
-    })
+    });
   }
 
   getPlaybackPosition() {
