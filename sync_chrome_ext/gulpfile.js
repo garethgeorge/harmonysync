@@ -3,10 +3,8 @@ const gulpWebpack = require("gulp-webpack");
 const webpack = require("webpack");
 const ts = require("gulp-typescript");
 const terser = require("gulp-terser");
-const run = require("gulp-run-command").default;
 const sourcemaps = require("gulp-sourcemaps");
-const rimraf = require("rimraf");
-
+const protobuf = require("gulp-protobuf");
 
 exports.tsc_contentscript = function tsc_contentscript() {
   return gulp
@@ -54,28 +52,26 @@ exports.webpack_contentscript = function webpack_contentscript() {
     .pipe(gulp.dest("build/bundle"));
 };
 
+exports.protocjs = function protoc_js() {
+  return gulp.src("../protos/*.proto")
+    .pipe(protobuf.pbjs({
+        target: "static-module",
+        wrap: "commonjs",
+        "force-number": true,
+    }))
+    .pipe(gulp.dest("./compiled_protos/"));
+}
+
+exports.protocts = function protoc_ts() {
+  return gulp.src("./compiled_protos/*.js")
+    .pipe(protobuf.pbts({}))
+    .pipe(gulp.dest("./compiled_protos/"));
+}
 
 exports.protos = gulp.series(
-  run("mkdir -p ./build/protos"),
-  run(`
-  protoc 
-    --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts
-    --js_out=import_style=commonjs,binary:./build/protos
-    --ts_out=./build/protos
-    -I ../protos sync.proto
-  `.replace(/\n/g, "")),
-  run(`
-  protoc 
-    --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts
-    --js_out=import_style=commonjs,binary:./build/protos
-    --ts_out=./build/protos
-    -I ../protos rpc.proto
-  `.replace(/\n/g, ""))
+  exports.protocjs,
+  exports.protocts,
 )
-
-exports.clean = async function clean() {
-  rimraf.sync("./build");
-};
 
 exports.default = gulp.series(
   exports.protos,

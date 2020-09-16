@@ -1,12 +1,14 @@
+syntax = "proto3";
+
 message VideoInfo {
-  string url;
+  string url = 1;
 }
 
 message RoomInfo {
   int64 id = 1;
   string name = 2;
   string token = 3;
-  repeated VideoInfo queue;
+  repeated VideoInfo queue = 4;
 }
 
 message JoinRoomReq {

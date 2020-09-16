@@ -1,35 +1,35 @@
 {
-  "name": "twist.moe-sync",
+  "name": "harmonysync-client",
   "version": "1.0.0",
   "description": "",
   "scripts": {
     "server": "ts-node ./server/src/index.ts"
   },
   "dependencies": {
+    "@types/engine.io-client": "^3.1.4",
+    "@types/protobufjs": "^6.0.0",
     "async-lock": "^1.2.4",
-    "event-emitter": "^0.3.5",
+    "base64-arraybuffer": "^0.2.0",
+    "engine.io-client": "^4.0.0",
+    "eventemitter3": "^4.0.7",
     "google-protobuf": "^3.13.0",
-    "socket.io-client": "^2.3.0"
+    "protobufjs": "^6.10.1",
+    "protorpcjs": "^1.0.1"
   },
   "devDependencies": {
-    "@improbable-eng/grpc-web": "^0.13.0",
     "@types/async-lock": "^1.1.2",
-    "@types/google-protobuf": "^3.7.3",
     "@types/socket.io-client": "^1.4.33",
     "gulp": "^4.0.2",
-    "gulp-run-command": "0.0.10",
     "gulp-sourcemaps": "^2.6.5",
+    "gulp-protobuf": "^1.0.1",
     "gulp-terser": "^1.4.0",
     "gulp-typescript": "^6.0.0-alpha.1",
     "gulp-webpack": "^1.5.0",
-    "rimraf": "^3.0.2",
     "source-map-loader": "^1.1.0",
     "ts-node": "^9.0.0",
-    "ts-protoc-gen": "^0.12.0",
-    "tsproject": "^3.0.0-beta.3",
     "typescript": "^4.0.2",
     "webpack": "^4.44.1"
   },
-  "author": "",
+  "author": "garethgeorge",
   "license": "ISC"
 }

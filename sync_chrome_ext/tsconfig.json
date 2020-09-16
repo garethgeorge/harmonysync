@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "lib": ["es2017", "es7", "es6"],
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

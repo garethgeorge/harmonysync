@@ -1,52 +1,75 @@
-import * as express from "express";
-import * as http from "http";
-import * as socketIo from "socket.io";
-import * as rpcUtil from "./rpc_util";
-import * as sync_pb from "../build/protos/sync_pb";
-import * as jspb from "google-protobuf";
+import express from "express";
+import http from "http";
+import EngineIO from "engine.io";
+import sync_pb from "../compiled_protos/sync";
+import { RPCMediator } from "protorpcjs";
+import SocketTransport from "./socket_transport";
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = EngineIO(server);
 
-let syncState = new sync_pb.SyncState();
-syncState.setPlaying(false);
-syncState.setLastSyncTime(new Date().getTime());
-syncState.setLastSyncPosition(0);
-syncState.setSeqNo(0);
+let syncState = new sync_pb.SyncState({
+  playing: false,
+  lastSyncPosition: 0,
+  lastSyncTime: 0,
+  seqNo: 0,
+});
 
-io.on("connection", (socket) => {
-  socket.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
+const mediators: { [socketId: string]: RPCMediator } = {};
+const synchronizeClients = () => {
+  return Promise.all(Object.values(mediators).map(async (mediator) => {
+    const syncRpcClient = new sync_pb.ClientSyncService(mediator.makeRpcClientImpl() as any);
+    try {
+      return await syncRpcClient.setSyncState(syncState);
+    } catch (e) {
+      return null;
+    }
+  }));
+};
 
-  rpcUtil.attachRpcHandler(
-    socket,
-    "SetSyncState",
-    sync_pb.SetSyncStateReq,
-    (data: jspb.Message) => {
-      const req = data as sync_pb.SetSyncStateReq;
-      const newSyncState = req.getNewSyncState();
-      console.log("received request to set server sync state to ", newSyncState.toObject());
-      if (newSyncState.getSeqNo() === syncState.getSeqNo() + 1) {
+io.on("connection", (socket: EngineIO.Socket) => {
+  console.log("client did connect");
+  socket.on("close", () => {
+    delete mediators[socket.id];
+  });
+
+  const rpcMediator = new RPCMediator(new SocketTransport(socket));
+  rpcMediator.on("error", console.log);
+  
+  mediators[socket.id] = rpcMediator;
+
+  rpcMediator.addMethod(
+    "setSyncState",
+    sync_pb.SetSyncStateReq.decode,
+    sync_pb.SetSyncStateResp.encode,
+    async (request) => {
+      if (!request.newSyncState) 
+        throw new Error("no newSyncState provided");
+      const newSyncState = new sync_pb.SyncState(request.newSyncState);
+
+      console.log("received request to set server sync state to ", newSyncState);
+      if (newSyncState.seqNo === syncState.seqNo + 1) {
         console.log("\taccepted request!");
         syncState = newSyncState;
-        const resp = new sync_pb.SetSyncStateResp();
-        resp.setStatus(sync_pb.SetSyncStateResp.Status.ACCEPT);
-
-        io.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
-
-        return resp;
+        console.log("sending out sync commands to clients");
+        synchronizeClients().then(() => {
+          console.log("all clients are synchronized");
+        });
+        return new sync_pb.SetSyncStateResp({
+          status: sync_pb.SetSyncStateResp.Status.ACCEPT,
+        });
       } else {
         console.log("\trejected request!");
-        const resp = new sync_pb.SetSyncStateResp();
-        resp.setStatus(sync_pb.SetSyncStateResp.Status.REJECT);
-        return resp;
+        return new sync_pb.SetSyncStateResp({
+          status: sync_pb.SetSyncStateResp.Status.ACCEPT,
+        });
       }
     }
   );
 
-  socket.on("ResyncReq", () => {
-    socket.emit("SyncState", rpcUtil.packageResponse(syncState).serializeBinary().buffer);
-  });
+  const syncRpcClient = new sync_pb.ClientSyncService(rpcMediator.makeRpcClientImpl() as any);
+  syncRpcClient.setSyncState(syncState); // send the initial "sync state" command
 });
 
 server.listen(3000, () => {

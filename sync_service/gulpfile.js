@@ -1,29 +1,23 @@
 const gulp = require("gulp");
-const run = require("gulp-run-command").default;
-const rimraf = require("rimraf");
+const protobuf = require("gulp-protobuf");
 
-exports.protos = gulp.series(
-  run("mkdir -p ./build/protos"),
-  run(`
-  protoc 
-    --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts
-    --js_out=import_style=commonjs,binary:./build/protos
-    --ts_out=./build/protos
-    -I ../protos sync.proto
-  `.replace(/\n/g, "")),
-  run(`
-  protoc 
-    --plugin=protoc-gen-ts=./node_modules/.bin/protoc-gen-ts
-    --js_out=import_style=commonjs,binary:./build/protos
-    --ts_out=./build/protos
-    -I ../protos rpc.proto
-  `.replace(/\n/g, ""))
-)
+exports.protocjs = function protoc_js() {
+  return gulp.src("../protos/*.proto")
+    .pipe(protobuf.pbjs({
+        target: "static-module",
+        wrap: "commonjs",
+        "force-number": true,
+    }))
+    .pipe(gulp.dest("./compiled_protos"));
+}
 
-exports.clean = async function clean() {
-  rimraf.sync("./build");
-};
+exports.protocts = function protoc_ts() {
+  return gulp.src("./compiled_protos/*.js")
+    .pipe(protobuf.pbts({}))
+    .pipe(gulp.dest("./compiled_protos"));
+}
 
 exports.default = gulp.series(
-  exports.protos,
-);
+  exports.protocjs,
+  exports.protocts,
+)

@@ -1,5 +1,17 @@
 syntax = "proto3";
 
+service ServerSyncService {
+  rpc setSyncState(SetSyncStateReq) returns (SetSyncStateResp) {};
+}
+
+service ClientSyncService {
+  rpc setSyncState(SyncState) returns (Empty) {};
+}
+
+message Empty {
+
+}
+
 message SyncState {
   int32 seq_no = 1; // sync state sequence number --
   bool playing = 2;

@@ -1,12 +1,13 @@
 import Overlay from "./sync/overlay";
 import TestOverlay from "./overlays/test_overlay";
-import io from "socket.io-client";
+import EngineIO from "engine.io-client";
 import SyncManager from "./sync/syncmanager";
+import { RPCMediator } from "protorpcjs";
+import SocketTransport from "./socket_transport";
 
 const overlays: [typeof Overlay] = [
   TestOverlay
 ];
-
 
 let overlay: Overlay = null;
 for (const overlayCtor of overlays) {
@@ -20,12 +21,15 @@ if (overlay != null) {
   console.log("found " + overlay.name() + " can handle page");
 
   console.log("establishing websocket connection");
-  const socket = io("http://localhost:3000", {
+  const socket = EngineIO("http://localhost:3000", {
     transports: ['websocket'] // try this to start with :P 
   });
+  const transport = new SocketTransport(socket);
+  const mediator = new RPCMediator(transport);
 
   console.log("requesting common-player-wrapper object from overlay");
   const playerWrapper = overlay.getPlayer();
   
-  const syncManager = new SyncManager(socket, playerWrapper);
+  console.log("constructing the sync manager");
+  const syncManager = new SyncManager(mediator, playerWrapper);
 }
