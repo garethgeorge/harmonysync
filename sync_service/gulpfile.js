@@ -13,7 +13,8 @@ exports.protocjs = function protoc_js() {
 
 exports.protocts = function protoc_ts() {
   return gulp.src("./compiled_protos/*.js")
-    .pipe(protobuf.pbts({}))
+    .pipe(protobuf.pbts({
+    }))
     .pipe(gulp.dest("./compiled_protos"));
 }
 

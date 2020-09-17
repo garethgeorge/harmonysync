@@ -16,8 +16,6 @@ export default class SocketTransport
 
   onData(callback: (data: Uint8Array) => void): void {
     this.socket.on("srvpkt", (data: Uint8Array) => {
-      console.log("data from server: ", SocketTransport.printData(data));
-      console.log("raw data from server: ", data);
       callback(new Uint8Array(data));
     });
   }
@@ -31,8 +29,7 @@ export default class SocketTransport
   }
 
   send(data: Uint8Array): void {
-    console.log("sending data to server: " + SocketTransport.printData(data));
-    this.socket.emit("srvpkt", data.buffer.slice(data.byteOffset, data.byteLength));
+    this.socket.emit("srvpkt", data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
   }
 
   close(): void {

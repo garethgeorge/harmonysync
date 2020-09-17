@@ -32,6 +32,20 @@ export class ServerSyncService extends $protobuf.rpc.Service {
      * @returns Promise
      */
     public setSyncState(request: ISetSyncStateReq): Promise<SetSyncStateResp>;
+
+    /**
+     * Calls requestResync.
+     * @param request RequestResyncReq message or plain object
+     * @param callback Node-style callback called with the error, if any, and Empty
+     */
+    public requestResync(request: IRequestResyncReq, callback: ServerSyncService.requestResyncCallback): void;
+
+    /**
+     * Calls requestResync.
+     * @param request RequestResyncReq message or plain object
+     * @returns Promise
+     */
+    public requestResync(request: IRequestResyncReq): Promise<Empty>;
 }
 
 export namespace ServerSyncService {
@@ -42,6 +56,13 @@ export namespace ServerSyncService {
      * @param [response] SetSyncStateResp
      */
     type setSyncStateCallback = (error: (Error|null), response?: SetSyncStateResp) => void;
+
+    /**
+     * Callback as used by {@link ServerSyncService#requestResync}.
+     * @param error Error, if any
+     * @param [response] Empty
+     */
+    type requestResyncCallback = (error: (Error|null), response?: Empty) => void;
 }
 
 /** Represents a ClientSyncService */
@@ -468,4 +489,94 @@ export namespace SetSyncStateResp {
         REJECT = 0,
         ACCEPT = 1
     }
+}
+
+/** Properties of a RequestResyncReq. */
+export interface IRequestResyncReq {
+
+    /** RequestResyncReq clientLatestSeqNo */
+    clientLatestSeqNo?: (number|null);
+}
+
+/** Represents a RequestResyncReq. */
+export class RequestResyncReq implements IRequestResyncReq {
+
+    /**
+     * Constructs a new RequestResyncReq.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IRequestResyncReq);
+
+    /** RequestResyncReq clientLatestSeqNo. */
+    public clientLatestSeqNo: number;
+
+    /**
+     * Creates a new RequestResyncReq instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns RequestResyncReq instance
+     */
+    public static create(properties?: IRequestResyncReq): RequestResyncReq;
+
+    /**
+     * Encodes the specified RequestResyncReq message. Does not implicitly {@link RequestResyncReq.verify|verify} messages.
+     * @param message RequestResyncReq message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IRequestResyncReq, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified RequestResyncReq message, length delimited. Does not implicitly {@link RequestResyncReq.verify|verify} messages.
+     * @param message RequestResyncReq message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IRequestResyncReq, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a RequestResyncReq message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns RequestResyncReq
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): RequestResyncReq;
+
+    /**
+     * Decodes a RequestResyncReq message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns RequestResyncReq
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): RequestResyncReq;
+
+    /**
+     * Verifies a RequestResyncReq message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a RequestResyncReq message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns RequestResyncReq
+     */
+    public static fromObject(object: { [k: string]: any }): RequestResyncReq;
+
+    /**
+     * Creates a plain object from a RequestResyncReq message. Also converts values to other types if specified.
+     * @param message RequestResyncReq
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: RequestResyncReq, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this RequestResyncReq to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
 }

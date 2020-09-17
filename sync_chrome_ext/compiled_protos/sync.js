@@ -74,6 +74,39 @@ $root.ServerSyncService = (function() {
      * @variation 2
      */
 
+    /**
+     * Callback as used by {@link ServerSyncService#requestResync}.
+     * @memberof ServerSyncService
+     * @typedef requestResyncCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {Empty} [response] Empty
+     */
+
+    /**
+     * Calls requestResync.
+     * @function requestResync
+     * @memberof ServerSyncService
+     * @instance
+     * @param {IRequestResyncReq} request RequestResyncReq message or plain object
+     * @param {ServerSyncService.requestResyncCallback} callback Node-style callback called with the error, if any, and Empty
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(ServerSyncService.prototype.requestResync = function requestResync(request, callback) {
+        return this.rpcCall(requestResync, $root.RequestResyncReq, $root.Empty, request, callback);
+    }, "name", { value: "requestResync" });
+
+    /**
+     * Calls requestResync.
+     * @function requestResync
+     * @memberof ServerSyncService
+     * @instance
+     * @param {IRequestResyncReq} request RequestResyncReq message or plain object
+     * @returns {Promise<Empty>} Promise
+     * @variation 2
+     */
+
     return ServerSyncService;
 })();
 
@@ -354,7 +387,7 @@ $root.SyncState = (function() {
      * @memberof SyncState
      * @instance
      */
-    SyncState.prototype.lastSyncTime = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    SyncState.prototype.lastSyncTime = 0;
 
     /**
      * SyncState lastSyncPosition.
@@ -538,11 +571,7 @@ $root.SyncState = (function() {
         if (options.defaults) {
             object.seqNo = 0;
             object.playing = false;
-            if ($util.Long) {
-                var long = new $util.Long(0, 0, false);
-                object.lastSyncTime = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
-            } else
-                object.lastSyncTime = options.longs === String ? "0" : 0;
+            object.lastSyncTime = 0;
             object.lastSyncPosition = 0;
         }
         if (message.seqNo != null && message.hasOwnProperty("seqNo"))
@@ -977,6 +1006,193 @@ $root.SetSyncStateResp = (function() {
     })();
 
     return SetSyncStateResp;
+})();
+
+$root.RequestResyncReq = (function() {
+
+    /**
+     * Properties of a RequestResyncReq.
+     * @exports IRequestResyncReq
+     * @interface IRequestResyncReq
+     * @property {number|null} [clientLatestSeqNo] RequestResyncReq clientLatestSeqNo
+     */
+
+    /**
+     * Constructs a new RequestResyncReq.
+     * @exports RequestResyncReq
+     * @classdesc Represents a RequestResyncReq.
+     * @implements IRequestResyncReq
+     * @constructor
+     * @param {IRequestResyncReq=} [properties] Properties to set
+     */
+    function RequestResyncReq(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * RequestResyncReq clientLatestSeqNo.
+     * @member {number} clientLatestSeqNo
+     * @memberof RequestResyncReq
+     * @instance
+     */
+    RequestResyncReq.prototype.clientLatestSeqNo = 0;
+
+    /**
+     * Creates a new RequestResyncReq instance using the specified properties.
+     * @function create
+     * @memberof RequestResyncReq
+     * @static
+     * @param {IRequestResyncReq=} [properties] Properties to set
+     * @returns {RequestResyncReq} RequestResyncReq instance
+     */
+    RequestResyncReq.create = function create(properties) {
+        return new RequestResyncReq(properties);
+    };
+
+    /**
+     * Encodes the specified RequestResyncReq message. Does not implicitly {@link RequestResyncReq.verify|verify} messages.
+     * @function encode
+     * @memberof RequestResyncReq
+     * @static
+     * @param {IRequestResyncReq} message RequestResyncReq message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    RequestResyncReq.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.clientLatestSeqNo != null && Object.hasOwnProperty.call(message, "clientLatestSeqNo"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int32(message.clientLatestSeqNo);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified RequestResyncReq message, length delimited. Does not implicitly {@link RequestResyncReq.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof RequestResyncReq
+     * @static
+     * @param {IRequestResyncReq} message RequestResyncReq message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    RequestResyncReq.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a RequestResyncReq message from the specified reader or buffer.
+     * @function decode
+     * @memberof RequestResyncReq
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {RequestResyncReq} RequestResyncReq
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    RequestResyncReq.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.RequestResyncReq();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.clientLatestSeqNo = reader.int32();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a RequestResyncReq message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof RequestResyncReq
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {RequestResyncReq} RequestResyncReq
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    RequestResyncReq.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a RequestResyncReq message.
+     * @function verify
+     * @memberof RequestResyncReq
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    RequestResyncReq.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.clientLatestSeqNo != null && message.hasOwnProperty("clientLatestSeqNo"))
+            if (!$util.isInteger(message.clientLatestSeqNo))
+                return "clientLatestSeqNo: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a RequestResyncReq message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof RequestResyncReq
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {RequestResyncReq} RequestResyncReq
+     */
+    RequestResyncReq.fromObject = function fromObject(object) {
+        if (object instanceof $root.RequestResyncReq)
+            return object;
+        var message = new $root.RequestResyncReq();
+        if (object.clientLatestSeqNo != null)
+            message.clientLatestSeqNo = object.clientLatestSeqNo | 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a RequestResyncReq message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof RequestResyncReq
+     * @static
+     * @param {RequestResyncReq} message RequestResyncReq
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    RequestResyncReq.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults)
+            object.clientLatestSeqNo = 0;
+        if (message.clientLatestSeqNo != null && message.hasOwnProperty("clientLatestSeqNo"))
+            object.clientLatestSeqNo = message.clientLatestSeqNo;
+        return object;
+    };
+
+    /**
+     * Converts this RequestResyncReq to JSON.
+     * @function toJSON
+     * @memberof RequestResyncReq
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    RequestResyncReq.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return RequestResyncReq;
 })();
 
 module.exports = $root;

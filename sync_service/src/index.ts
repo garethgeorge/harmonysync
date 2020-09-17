@@ -16,67 +16,102 @@ let syncState = new sync_pb.SyncState({
   seqNo: 0,
 });
 
-const mediators: { [socketId: string]: RPCMediator } = {};
-const synchronizeClients = () => {
-  return Promise.all(Object.values(mediators).map(async (mediator) => {
-    const syncRpcClient = new sync_pb.ClientSyncService(mediator.makeRpcClientImpl() as any);
-    try {
-      return await syncRpcClient.setSyncState(syncState);
-    } catch (e) {
-      return null;
-    }
-  }));
-};
+/*
+  TODO(gareth): finish implementing rooms
+*/
+class Room {
+  private clients: {[clientId: string]: Client};
+
+  constructor(private id: string) {
+    this.clients = {};
+  }
+
+  addClient(client: Client) {
+
+  }
+}
+
+class Client {
+  private static allClients: {[clientId: string]: Client} = {};
+
+  public mediator: RPCMediator;
+  public syncRpcClient: sync_pb.ClientSyncService;
+
+  constructor(private socket: SocketIO.Socket) {
+    this.mediator = new RPCMediator(new SocketTransport(socket));
+    this.syncRpcClient = new sync_pb.ClientSyncService(this.mediator.makeRpcClientImpl() as any);
+
+    this.mediator.on("error", console.log);
+    this.socket.on("error", (message) => {
+      console.log("socket error: ", message);
+    });
+  }
+
+  init() {    
+    this.socket.on("disconnect", () => {
+      delete Client.allClients[this.socket.id];
+    });
+
+    this.addMethods();
+
+    Client.allClients[this.socket.id] = this;
+
+    this.setSyncStateOnClient(syncState);
+  }
+
+  addMethods() {
+    this.mediator.addMethod(
+      "setSyncState",
+      sync_pb.SetSyncStateReq.decode,
+      sync_pb.SetSyncStateResp.encode,
+      async (request) => {
+        if (!request.newSyncState) 
+          throw new Error("no newSyncState provided");
+        const newSyncState = new sync_pb.SyncState(request.newSyncState);
+  
+        console.log("received request to set server sync state to ", newSyncState);
+        if (newSyncState.seqNo === syncState.seqNo + 1) {
+          console.log("\taccepted request!");
+          syncState = newSyncState;
+          console.log("sending out sync commands to clients");
+          
+          // TODO(gareth): synchronize with room
+          for (const client of Object.values(Client.allClients)) {
+            client.setSyncStateOnClient(syncState);
+          }
+
+          return new sync_pb.SetSyncStateResp({
+            status: sync_pb.SetSyncStateResp.Status.ACCEPT,
+          });
+        } else {
+          console.log("\trejected request!");
+
+          this.setSyncStateOnClient(syncState);
+
+          return new sync_pb.SetSyncStateResp({
+            status: sync_pb.SetSyncStateResp.Status.REJECT,
+          });
+        }
+      }
+    );
+
+    this.mediator.addMethod("requestResync", sync_pb.RequestResyncReq.decode, sync_pb.Empty.encode, async (request) => {
+      if (request.clientLatestSeqNo !== syncState.seqNo) {
+        this.setSyncStateOnClient(syncState);
+      }
+      return {}; // returns empty
+    });
+  }
+
+  setSyncStateOnClient(syncState) {
+    console.log("sending syncState to client: ", syncState)
+    return this.syncRpcClient.setSyncState(syncState);
+  }
+}
 
 io.on("connection", (socket: SocketIO.Socket) => {
   console.log("client did connect");
-  socket.on("disconnect", () => {
-    delete mediators[socket.id];
-  });
-
-  socket.on("error", (message) => {
-    console.log("socket error: ", message);
-  });
-
-  const rpcMediator = new RPCMediator(new SocketTransport(socket));
-  rpcMediator.on("error", console.log);
-  
-  mediators[socket.id] = rpcMediator;
-
-  rpcMediator.addMethod(
-    "setSyncState",
-    sync_pb.SetSyncStateReq.decode,
-    sync_pb.SetSyncStateResp.encode,
-    async (request) => {
-      if (!request.newSyncState) 
-        throw new Error("no newSyncState provided");
-      const newSyncState = new sync_pb.SyncState(request.newSyncState);
-
-      console.log("received request to set server sync state to ", newSyncState);
-      if (newSyncState.seqNo === syncState.seqNo + 1) {
-        console.log("\taccepted request!");
-        syncState = newSyncState;
-        console.log("sending out sync commands to clients");
-        synchronizeClients().then(() => {
-          console.log("all clients are synchronized");
-        });
-        return new sync_pb.SetSyncStateResp({
-          status: sync_pb.SetSyncStateResp.Status.ACCEPT,
-        });
-      } else {
-        console.log("\trejected request!");
-        return new sync_pb.SetSyncStateResp({
-          status: sync_pb.SetSyncStateResp.Status.ACCEPT,
-        });
-      }
-    }
-  );
-
-  const syncRpcClient = new sync_pb.ClientSyncService(rpcMediator.makeRpcClientImpl() as any);
-  console.log("sending sync state to client");
-  syncRpcClient.setSyncState(syncState).then(() => {
-    console.log("client ack'd the sync state we sent");
-  })
+  new Client(socket).init();
 });
 
 server.listen(3000, () => {

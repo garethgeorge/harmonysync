@@ -46,10 +46,16 @@ export default class SyncManager {
 
     console.log("subscribing to events...");
     this.rpcMediator.addMethod("setSyncState", sync_pb.SetSyncStateReq.decode, sync_pb.Empty.encode, async (request) => {
-      const syncState = request.newSyncState;
+      const syncState = sync_pb.SyncState.create({
+        playing: request.newSyncState.playing,
+        lastSyncPosition: request.newSyncState.lastSyncPosition,
+        lastSyncTime: request.newSyncState.lastSyncTime,
+        seqNo: request.newSyncState.seqNo,
+      });
 
       console.log("got new SyncState from server: ", syncState);
-      this.serverSyncState = new sync_pb.SyncState(syncState);
+      this.serverSyncState = sync_pb.SyncState.create(syncState);
+      console.log("set local sync state to: ", this.serverSyncState);
       await this.applyServerSyncState().then(() => {
         console.log("applied sync state");
       });
@@ -98,6 +104,8 @@ export default class SyncManager {
       const resp = await this.syncRpcClient.setSyncState({
         newSyncState: newState
       });
+      
+      console.log("set sync state response: ", resp);
 
       if (resp.status == sync_pb.SetSyncStateResp.Status.ACCEPT) {
         console.log("server accepted client's syncstate");
@@ -105,7 +113,7 @@ export default class SyncManager {
       } else {
         console.log("server rejected client's syncstate -- we are out of sync");
         this.serverSyncState = null;
-        this.requestResync();
+        // this.requestResync();
       }
     });
   }

@@ -230,7 +230,7 @@ $root.RoomInfo = (function() {
      * @memberof RoomInfo
      * @instance
      */
-    RoomInfo.prototype.id = $util.Long ? $util.Long.fromBits(0,0,false) : 0;
+    RoomInfo.prototype.id = 0;
 
     /**
      * RoomInfo name.
@@ -447,11 +447,7 @@ $root.RoomInfo = (function() {
         if (options.arrays || options.defaults)
             object.queue = [];
         if (options.defaults) {
-            if ($util.Long) {
-                var long = new $util.Long(0, 0, false);
-                object.id = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
-            } else
-                object.id = options.longs === String ? "0" : 0;
+            object.id = 0;
             object.name = "";
             object.token = "";
         }
