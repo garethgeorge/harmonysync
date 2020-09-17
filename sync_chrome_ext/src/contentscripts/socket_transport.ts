@@ -1,23 +1,29 @@
-import EventEmitter from "eventemitter3";
+import * as EventEmitter from "eventemitter3";
 import { RPCMessageTransport } from "protorpcjs/src/transport";
-import EngineIO from "engine.io-client";
+
+import "socket.io-client";
 
 export default class SocketTransport
   extends EventEmitter.EventEmitter
   implements RPCMessageTransport {
-  constructor(private socket: EngineIO.Socket) {
+  constructor(private socket: SocketIOClient.Socket) {
     super();
+
+    socket.on("error", (message) => {
+      console.log("socket error: ", message);
+    });
   }
 
   onData(callback: (data: Uint8Array) => void): void {
-    this.socket.on("message", (data: ArrayBuffer) => {
-      console.log("got data!!!", new Uint8Array(data));
+    this.socket.on("srvpkt", (data: Uint8Array) => {
+      console.log("data from server: ", SocketTransport.printData(data));
+      console.log("raw data from server: ", data);
       callback(new Uint8Array(data));
     });
   }
 
   onClose(callback: () => void): void {
-    this.socket.on("close", callback);
+    this.socket.on("disconnect", callback);
   }
 
   onError(callback: (error: Error) => void): void {
@@ -25,12 +31,19 @@ export default class SocketTransport
   }
 
   send(data: Uint8Array): void {
-    console.log("sending data!!!");
-    const sliceBuffer = data.buffer.slice(0, data.length);
-    this.socket.send(sliceBuffer);
+    console.log("sending data to server: " + SocketTransport.printData(data));
+    this.socket.emit("srvpkt", data.buffer.slice(data.byteOffset, data.byteLength));
   }
 
   close(): void {
-    this.socket.close();
+    this.socket.disconnect();
+  }
+
+  static printData(data: Uint8Array) {
+    const bytes = [];
+    for (let i = 0; i < data.length; ++i) {
+      bytes.push("" + data[i]);
+    }
+    return "[length = " + data.length + "; " + bytes.join(",") + "]";
   }
 }

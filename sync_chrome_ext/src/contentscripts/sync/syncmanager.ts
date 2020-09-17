@@ -54,6 +54,8 @@ export default class SyncManager {
         console.log("applied sync state");
       });
 
+      console.log("sending back sync_pb.Empty() to server to indicate we completed");
+
       return new sync_pb.Empty({});
     });
 

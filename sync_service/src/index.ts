@@ -1,13 +1,13 @@
 import express from "express";
 import http from "http";
-import EngineIO from "engine.io";
+import SocketIO from "socket.io";
 import sync_pb from "../compiled_protos/sync";
 import { RPCMediator } from "protorpcjs";
 import SocketTransport from "./socket_transport";
 
 const app = express();
 const server = http.createServer(app);
-const io = EngineIO(server);
+const io = SocketIO(server);
 
 let syncState = new sync_pb.SyncState({
   playing: false,
@@ -28,10 +28,14 @@ const synchronizeClients = () => {
   }));
 };
 
-io.on("connection", (socket: EngineIO.Socket) => {
+io.on("connection", (socket: SocketIO.Socket) => {
   console.log("client did connect");
-  socket.on("close", () => {
+  socket.on("disconnect", () => {
     delete mediators[socket.id];
+  });
+
+  socket.on("error", (message) => {
+    console.log("socket error: ", message);
   });
 
   const rpcMediator = new RPCMediator(new SocketTransport(socket));
@@ -69,7 +73,10 @@ io.on("connection", (socket: EngineIO.Socket) => {
   );
 
   const syncRpcClient = new sync_pb.ClientSyncService(rpcMediator.makeRpcClientImpl() as any);
-  syncRpcClient.setSyncState(syncState); // send the initial "sync state" command
+  console.log("sending sync state to client");
+  syncRpcClient.setSyncState(syncState).then(() => {
+    console.log("client ack'd the sync state we sent");
+  })
 });
 
 server.listen(3000, () => {

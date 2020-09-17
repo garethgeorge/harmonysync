@@ -1,6 +1,6 @@
 import Overlay from "./sync/overlay";
 import TestOverlay from "./overlays/test_overlay";
-import EngineIO from "engine.io-client";
+import SocketIOClient from "socket.io-client";
 import SyncManager from "./sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
 import SocketTransport from "./socket_transport";
@@ -21,9 +21,10 @@ if (overlay != null) {
   console.log("found " + overlay.name() + " can handle page");
 
   console.log("establishing websocket connection");
-  const socket = EngineIO("http://localhost:3000", {
+  const socket = SocketIOClient("http://localhost:3000", {
     transports: ['websocket'] // try this to start with :P 
   });
+
   const transport = new SocketTransport(socket);
   const mediator = new RPCMediator(transport);
 
