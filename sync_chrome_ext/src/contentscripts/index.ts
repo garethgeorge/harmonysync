@@ -2,9 +2,11 @@ import Overlay from "./sync/overlay";
 import TestOverlay from "./overlays/test_overlay";
 import io from "socket.io-client";
 import SyncManager from "./sync/syncmanager";
+import ChatOverlay from "./ui/components/chat/chatoverlay";
 
 const overlays: [typeof Overlay] = [
-  TestOverlay
+  // TestOverlay,
+  ChatOverlay
 ];
 
 
@@ -27,5 +29,6 @@ if (overlay != null) {
   console.log("requesting common-player-wrapper object from overlay");
   const playerWrapper = overlay.getPlayer();
   
+  overlay.applyHTML();
   const syncManager = new SyncManager(socket, playerWrapper);
 }

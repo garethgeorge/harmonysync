@@ -6,6 +6,7 @@ export default interface Overlay {
   canHandlePage(): boolean;
   name(): string;
   getPlayer(): Player;
+  applyHTML(): void;
 }
 
 export default class BaseOverlay implements Overlay {
@@ -28,6 +29,9 @@ export default class BaseOverlay implements Overlay {
       throw new Error("could not find the HTML video player object");
     }
     return new BasicWebVideoPlayer(mediaElement)
+  }
+  applyHTML() {
+    
   }
 
   //
