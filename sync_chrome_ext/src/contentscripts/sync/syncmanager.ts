@@ -3,7 +3,7 @@ import * as sync_pb from "../../../compiled_protos/sync";
 import { sleep } from "../util";
 import { Player } from "./player";
 import { RPCMediator } from "protorpcjs";
-import { version } from "../../config";
+import { version } from "../config";
 
 const getTimeSeconds = () => {
   return new Date().getTime() / 1000.0;

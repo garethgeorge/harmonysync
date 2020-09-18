@@ -17,7 +17,12 @@ exports.tsc_contentscript = function tsc_contentscript() {
         allowSyntheticDefaultImports: true,
       })
     )
-    .pipe(terser())
+    .pipe(terser({
+      ecma: 6,
+      output: {
+        ascii_only: true
+      }
+    }))
     .pipe(sourcemaps.write("./"))
     .pipe(gulp.dest("build/es6"));
 };
