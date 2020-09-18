@@ -16,7 +16,7 @@ message Empty {
 message SyncState {
   int32 seq_no = 1; // sync state sequence number --
   bool playing = 2;
-  int64 last_sync_time = 3; // integer milliseconds
+  double last_sync_time = 3; // floating point seconds
   double last_sync_position = 4; // floating point seconds
 }
 

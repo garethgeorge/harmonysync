@@ -4,9 +4,13 @@ import { sleep } from "../util";
 import { Player } from "./player";
 import { RPCMediator } from "protorpcjs";
 
+const getTimeSeconds = () => {
+  return new Date().getTime() / 1000.0;
+}
+
 const stateGetPosition = (state: sync_pb.SyncState) => {
   if (state.playing) {
-    return state.lastSyncPosition + (new Date().getTime() - state.lastSyncTime) / 1000;
+    return state.lastSyncPosition + getTimeSeconds() - state.lastSyncTime;
   } else return state.lastSyncPosition;
 };
 
@@ -45,14 +49,7 @@ export default class SyncManager {
     });
 
     console.log("subscribing to events...");
-    this.rpcMediator.addMethod("setSyncState", sync_pb.SetSyncStateReq.decode, sync_pb.Empty.encode, async (request) => {
-      const syncState = sync_pb.SyncState.create({
-        playing: request.newSyncState.playing,
-        lastSyncPosition: request.newSyncState.lastSyncPosition,
-        lastSyncTime: request.newSyncState.lastSyncTime,
-        seqNo: request.newSyncState.seqNo,
-      });
-
+    this.rpcMediator.addMethod("setSyncState", sync_pb.SyncState.decode, sync_pb.Empty.encode, async (syncState) => {
       console.log("got new SyncState from server: ", syncState);
       this.serverSyncState = sync_pb.SyncState.create(syncState);
       console.log("set local sync state to: ", this.serverSyncState);
@@ -122,7 +119,7 @@ export default class SyncManager {
     return new sync_pb.SyncState({
       seqNo: this.serverSyncState ? this.serverSyncState.seqNo + 1 : -1,
       playing: this.player.isPlaying(),
-      lastSyncTime: new Date().getTime(),
+      lastSyncTime: getTimeSeconds(),
       lastSyncPosition: this.player.getPlaybackPosition(),
     });
   }

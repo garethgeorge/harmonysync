@@ -426,7 +426,7 @@ $root.SyncState = (function() {
         if (message.playing != null && Object.hasOwnProperty.call(message, "playing"))
             writer.uint32(/* id 2, wireType 0 =*/16).bool(message.playing);
         if (message.lastSyncTime != null && Object.hasOwnProperty.call(message, "lastSyncTime"))
-            writer.uint32(/* id 3, wireType 0 =*/24).int64(message.lastSyncTime);
+            writer.uint32(/* id 3, wireType 1 =*/25).double(message.lastSyncTime);
         if (message.lastSyncPosition != null && Object.hasOwnProperty.call(message, "lastSyncPosition"))
             writer.uint32(/* id 4, wireType 1 =*/33).double(message.lastSyncPosition);
         return writer;
@@ -470,7 +470,7 @@ $root.SyncState = (function() {
                 message.playing = reader.bool();
                 break;
             case 3:
-                message.lastSyncTime = reader.int64();
+                message.lastSyncTime = reader.double();
                 break;
             case 4:
                 message.lastSyncPosition = reader.double();
@@ -517,8 +517,8 @@ $root.SyncState = (function() {
             if (typeof message.playing !== "boolean")
                 return "playing: boolean expected";
         if (message.lastSyncTime != null && message.hasOwnProperty("lastSyncTime"))
-            if (!$util.isInteger(message.lastSyncTime) && !(message.lastSyncTime && $util.isInteger(message.lastSyncTime.low) && $util.isInteger(message.lastSyncTime.high)))
-                return "lastSyncTime: integer|Long expected";
+            if (typeof message.lastSyncTime !== "number")
+                return "lastSyncTime: number expected";
         if (message.lastSyncPosition != null && message.hasOwnProperty("lastSyncPosition"))
             if (typeof message.lastSyncPosition !== "number")
                 return "lastSyncPosition: number expected";
@@ -542,14 +542,7 @@ $root.SyncState = (function() {
         if (object.playing != null)
             message.playing = Boolean(object.playing);
         if (object.lastSyncTime != null)
-            if ($util.Long)
-                (message.lastSyncTime = $util.Long.fromValue(object.lastSyncTime)).unsigned = false;
-            else if (typeof object.lastSyncTime === "string")
-                message.lastSyncTime = parseInt(object.lastSyncTime, 10);
-            else if (typeof object.lastSyncTime === "number")
-                message.lastSyncTime = object.lastSyncTime;
-            else if (typeof object.lastSyncTime === "object")
-                message.lastSyncTime = new $util.LongBits(object.lastSyncTime.low >>> 0, object.lastSyncTime.high >>> 0).toNumber();
+            message.lastSyncTime = Number(object.lastSyncTime);
         if (object.lastSyncPosition != null)
             message.lastSyncPosition = Number(object.lastSyncPosition);
         return message;
@@ -579,10 +572,7 @@ $root.SyncState = (function() {
         if (message.playing != null && message.hasOwnProperty("playing"))
             object.playing = message.playing;
         if (message.lastSyncTime != null && message.hasOwnProperty("lastSyncTime"))
-            if (typeof message.lastSyncTime === "number")
-                object.lastSyncTime = options.longs === String ? String(message.lastSyncTime) : message.lastSyncTime;
-            else
-                object.lastSyncTime = options.longs === String ? $util.Long.prototype.toString.call(message.lastSyncTime) : options.longs === Number ? new $util.LongBits(message.lastSyncTime.low >>> 0, message.lastSyncTime.high >>> 0).toNumber() : message.lastSyncTime;
+            object.lastSyncTime = options.json && !isFinite(message.lastSyncTime) ? String(message.lastSyncTime) : message.lastSyncTime;
         if (message.lastSyncPosition != null && message.hasOwnProperty("lastSyncPosition"))
             object.lastSyncPosition = options.json && !isFinite(message.lastSyncPosition) ? String(message.lastSyncPosition) : message.lastSyncPosition;
         return object;

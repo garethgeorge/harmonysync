@@ -27,7 +27,7 @@ class Room {
   }
 
   addClient(client: Client) {
-
+    
   }
 }
 
@@ -77,7 +77,9 @@ class Client {
           
           // TODO(gareth): synchronize with room
           for (const client of Object.values(Client.allClients)) {
-            client.setSyncStateOnClient(syncState);
+            if (client !== this) {
+              client.setSyncStateOnClient(syncState);
+            }
           }
 
           return new sync_pb.SetSyncStateResp({
@@ -85,7 +87,8 @@ class Client {
           });
         } else {
           console.log("\trejected request!");
-
+          
+          // send them the proper sync state, they have gotten desync'd 
           this.setSyncStateOnClient(syncState);
 
           return new sync_pb.SetSyncStateResp({
@@ -106,6 +109,10 @@ class Client {
   setSyncStateOnClient(syncState) {
     console.log("sending syncState to client: ", syncState)
     return this.syncRpcClient.setSyncState(syncState);
+  }
+
+  get id() {
+    return this.socket.id;
   }
 }
 
