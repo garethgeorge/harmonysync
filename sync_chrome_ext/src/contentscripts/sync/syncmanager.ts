@@ -3,10 +3,11 @@ import * as sync_pb from "../../../compiled_protos/sync";
 import { sleep } from "../util";
 import { Player } from "./player";
 import { RPCMediator } from "protorpcjs";
+import { version } from "../../config";
 
 const getTimeSeconds = () => {
   return new Date().getTime() / 1000.0;
-}
+};
 
 const stateGetPosition = (state: sync_pb.SyncState) => {
   if (state.playing) {
@@ -49,19 +50,30 @@ export default class SyncManager {
     });
 
     console.log("subscribing to events...");
-    this.rpcMediator.addMethod("setSyncState", sync_pb.SyncState.decode, sync_pb.Empty.encode, async (syncState) => {
-      console.log("got new SyncState from server: ", syncState);
-      this.serverSyncState = sync_pb.SyncState.create(syncState);
-      console.log("set local sync state to: ", this.serverSyncState);
-      await this.applyServerSyncState().then(() => {
-        console.log("applied sync state");
-      });
+    this.rpcMediator.addMethod(
+      "setSyncState",
+      sync_pb.SyncState.decode,
+      sync_pb.Empty.encode,
+      sync_pb.Empty.verify,
+      async (syncState) => {
+        console.log("got new SyncState from server: ", syncState);
+        this.serverSyncState = sync_pb.SyncState.create(syncState);
+        console.log("set local sync state to: ", this.serverSyncState);
+        await this.applyServerSyncState().then(() => {
+          console.log("applied sync state");
+        });
 
-      console.log("sending back sync_pb.Empty() to server to indicate we completed");
+        console.log("sending back sync_pb.Empty() to server to indicate we completed");
 
-      return new sync_pb.Empty({});
+        return new sync_pb.Empty({});
+      }
+    );
+
+    this.syncRpcClient.getServerVersion({}).then(serverVersionInfo => {
+      if (serverVersionInfo.version !== version) {
+        alert("Server / client version mismatch... you may encounter errors. Please update the extension.");
+      }
     });
-
   }
 
   async requestResync() {
@@ -94,14 +106,12 @@ export default class SyncManager {
         return;
       }
 
-      console.log(
-        "client submitting local sync state to server with seqno: " + newState.seqNo
-      );
+      console.log("client submitting local sync state to server with seqno: " + newState.seqNo);
 
       const resp = await this.syncRpcClient.setSyncState({
-        newSyncState: newState
+        newSyncState: newState,
       });
-      
+
       console.log("set sync state response: ", resp);
 
       if (resp.status == sync_pb.SetSyncStateResp.Status.ACCEPT) {
@@ -146,18 +156,13 @@ export default class SyncManager {
             stateGetPosition(this.serverSyncState) +
             ")"
         );
-        this.player.setState(
-          this.serverSyncState.playing,
-          stateGetPosition(this.serverSyncState)
-        );
+        this.player.setState(this.serverSyncState.playing, stateGetPosition(this.serverSyncState));
         do {
           await sleep(100);
         } while (desiredState == this.serverSyncState && this.player.isBuffering());
       }
       this.clientSynchronizingWithServer = false;
-      console.log(
-        "done synchronizing with latest server syncstate: " + this.serverSyncState.seqNo
-      );
+      console.log("done synchronizing with latest server syncstate: " + this.serverSyncState.seqNo);
     });
   }
 }

@@ -20,7 +20,7 @@
     "gulp": "^4.0.2",
     "gulp-protobuf": "^1.0.1",
     "protobufjs": "^6.10.1",
-    "protorpcjs": "^1.0.3",
+    "protorpcjs": "^1.1.1",
     "socket.io": "^2.3.0",
     "typescript": "^4.0.2"
   }

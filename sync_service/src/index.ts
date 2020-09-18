@@ -4,6 +4,7 @@ import SocketIO from "socket.io";
 import sync_pb from "../compiled_protos/sync";
 import { RPCMediator } from "protorpcjs";
 import SocketTransport from "./socket_transport";
+import { version } from "./config";
 
 const app = express();
 const server = http.createServer(app);
@@ -60,10 +61,24 @@ class Client {
   }
 
   addMethods() {
+
+    this.mediator.addMethod(
+      "getServerVersion",
+      sync_pb.Empty.decode, 
+      sync_pb.ServerProtocolVersion.encode,
+      sync_pb.ServerProtocolVersion.verify,
+      async (request) => {
+        return {
+          version: "1.0.0"
+        };
+      }
+    )
+
     this.mediator.addMethod(
       "setSyncState",
       sync_pb.SetSyncStateReq.decode,
       sync_pb.SetSyncStateResp.encode,
+      sync_pb.SetSyncStateResp.verify,
       async (request) => {
         if (!request.newSyncState) 
           throw new Error("no newSyncState provided");
@@ -98,7 +113,7 @@ class Client {
       }
     );
 
-    this.mediator.addMethod("requestResync", sync_pb.RequestResyncReq.decode, sync_pb.Empty.encode, async (request) => {
+    this.mediator.addMethod("requestResync", sync_pb.RequestResyncReq.decode, sync_pb.Empty.encode, sync_pb.Empty.verify, async (request) => {
       if (request.clientLatestSeqNo !== syncState.seqNo) {
         this.setSyncStateOnClient(syncState);
       }

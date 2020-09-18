@@ -42,6 +42,39 @@ $root.ServerSyncService = (function() {
     };
 
     /**
+     * Callback as used by {@link ServerSyncService#getServerVersion}.
+     * @memberof ServerSyncService
+     * @typedef getServerVersionCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {ServerProtocolVersion} [response] ServerProtocolVersion
+     */
+
+    /**
+     * Calls getServerVersion.
+     * @function getServerVersion
+     * @memberof ServerSyncService
+     * @instance
+     * @param {IEmpty} request Empty message or plain object
+     * @param {ServerSyncService.getServerVersionCallback} callback Node-style callback called with the error, if any, and ServerProtocolVersion
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(ServerSyncService.prototype.getServerVersion = function getServerVersion(request, callback) {
+        return this.rpcCall(getServerVersion, $root.Empty, $root.ServerProtocolVersion, request, callback);
+    }, "name", { value: "getServerVersion" });
+
+    /**
+     * Calls getServerVersion.
+     * @function getServerVersion
+     * @memberof ServerSyncService
+     * @instance
+     * @param {IEmpty} request Empty message or plain object
+     * @returns {Promise<ServerProtocolVersion>} Promise
+     * @variation 2
+     */
+
+    /**
      * Callback as used by {@link ServerSyncService#setSyncState}.
      * @memberof ServerSyncService
      * @typedef setSyncStateCallback
@@ -336,6 +369,193 @@ $root.Empty = (function() {
     };
 
     return Empty;
+})();
+
+$root.ServerProtocolVersion = (function() {
+
+    /**
+     * Properties of a ServerProtocolVersion.
+     * @exports IServerProtocolVersion
+     * @interface IServerProtocolVersion
+     * @property {string|null} [version] ServerProtocolVersion version
+     */
+
+    /**
+     * Constructs a new ServerProtocolVersion.
+     * @exports ServerProtocolVersion
+     * @classdesc Represents a ServerProtocolVersion.
+     * @implements IServerProtocolVersion
+     * @constructor
+     * @param {IServerProtocolVersion=} [properties] Properties to set
+     */
+    function ServerProtocolVersion(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * ServerProtocolVersion version.
+     * @member {string} version
+     * @memberof ServerProtocolVersion
+     * @instance
+     */
+    ServerProtocolVersion.prototype.version = "";
+
+    /**
+     * Creates a new ServerProtocolVersion instance using the specified properties.
+     * @function create
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {IServerProtocolVersion=} [properties] Properties to set
+     * @returns {ServerProtocolVersion} ServerProtocolVersion instance
+     */
+    ServerProtocolVersion.create = function create(properties) {
+        return new ServerProtocolVersion(properties);
+    };
+
+    /**
+     * Encodes the specified ServerProtocolVersion message. Does not implicitly {@link ServerProtocolVersion.verify|verify} messages.
+     * @function encode
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {IServerProtocolVersion} message ServerProtocolVersion message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ServerProtocolVersion.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.version != null && Object.hasOwnProperty.call(message, "version"))
+            writer.uint32(/* id 1, wireType 2 =*/10).string(message.version);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified ServerProtocolVersion message, length delimited. Does not implicitly {@link ServerProtocolVersion.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {IServerProtocolVersion} message ServerProtocolVersion message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    ServerProtocolVersion.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a ServerProtocolVersion message from the specified reader or buffer.
+     * @function decode
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {ServerProtocolVersion} ServerProtocolVersion
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ServerProtocolVersion.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.ServerProtocolVersion();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.version = reader.string();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a ServerProtocolVersion message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {ServerProtocolVersion} ServerProtocolVersion
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    ServerProtocolVersion.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a ServerProtocolVersion message.
+     * @function verify
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    ServerProtocolVersion.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.version != null && message.hasOwnProperty("version"))
+            if (!$util.isString(message.version))
+                return "version: string expected";
+        return null;
+    };
+
+    /**
+     * Creates a ServerProtocolVersion message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {ServerProtocolVersion} ServerProtocolVersion
+     */
+    ServerProtocolVersion.fromObject = function fromObject(object) {
+        if (object instanceof $root.ServerProtocolVersion)
+            return object;
+        var message = new $root.ServerProtocolVersion();
+        if (object.version != null)
+            message.version = String(object.version);
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a ServerProtocolVersion message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof ServerProtocolVersion
+     * @static
+     * @param {ServerProtocolVersion} message ServerProtocolVersion
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    ServerProtocolVersion.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults)
+            object.version = "";
+        if (message.version != null && message.hasOwnProperty("version"))
+            object.version = message.version;
+        return object;
+    };
+
+    /**
+     * Converts this ServerProtocolVersion to JSON.
+     * @function toJSON
+     * @memberof ServerProtocolVersion
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    ServerProtocolVersion.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return ServerProtocolVersion;
 })();
 
 $root.SyncState = (function() {
