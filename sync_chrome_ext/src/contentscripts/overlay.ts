@@ -1,5 +1,5 @@
-import io from "socket.io-client";
-import {Player, BasicWebVideoPlayer} from "./player";
+import {Player, BasicWebVideoPlayer} from "./sync/player";
+
 
 export default interface Overlay {
   constructor(window: Window);

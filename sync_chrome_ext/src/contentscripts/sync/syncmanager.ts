@@ -1,5 +1,5 @@
-import * as AsyncLock from "async-lock";
-import * as sync_pb from "../../../compiled_protos/sync";
+import AsyncLock from "async-lock";
+import sync_pb from "../../../compiled_protos/sync";
 import { sleep } from "../util";
 import { Player } from "./player";
 import { RPCMediator } from "protorpcjs";

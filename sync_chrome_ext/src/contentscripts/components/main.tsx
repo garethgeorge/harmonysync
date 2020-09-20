@@ -1,7 +1,4 @@
 import React from "react";
+import * as ReactDOM from "react-dom";
 
-export default () => {
-  return (
-    <p>Hello world</p>
-  )
-}
+ReactDOM.render(<p>HELLO WORLD</p>, document.getElementById("myTestDiv"));

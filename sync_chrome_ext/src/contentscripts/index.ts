@@ -1,11 +1,11 @@
-import Overlay from "./sync/overlay";
+import Overlay from "./overlay";
 import TestOverlay from "./overlays/test_overlay";
 import SocketIOClient from "socket.io-client";
 import SyncManager from "./sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
 import SocketTransport from "./socket_transport";
 
-// import "./components/main.tsx";
+import "./components/main";
 
 setTimeout(() => {
   const overlays: [typeof Overlay] = [
