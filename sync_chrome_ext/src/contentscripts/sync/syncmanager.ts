@@ -21,7 +21,7 @@ const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
     return false;
   }
   // are they off by more than half a second?
-  if (Math.abs(stateGetPosition(a) - stateGetPosition(b)) > 1) {
+  if (Math.abs(stateGetPosition(a) - stateGetPosition(b)) > 0.5) {
     return false;
   }
   return true;
@@ -69,9 +69,11 @@ export default class SyncManager {
       }
     );
 
-    this.syncRpcClient.getServerVersion({}).then(serverVersionInfo => {
+    this.syncRpcClient.getServerVersion({}).then((serverVersionInfo) => {
       if (serverVersionInfo.version !== version) {
-        alert("Server / client version mismatch... you may encounter errors. Please update the extension.");
+        alert(
+          "Server / client version mismatch... you may encounter errors. Please update the extension."
+        );
       }
     });
   }
@@ -82,11 +84,11 @@ export default class SyncManager {
   }
 
   canSubmitSyncState(): boolean {
-    if (!this.serverSyncState) {
+    if (!this.serverSyncState || this.clientSynchronizingWithServer) {
       return false;
     }
     const newState = this.computePlayerSyncState();
-    if (this.clientSynchronizingWithServer || areStatesClose(newState, this.serverSyncState)) {
+    if (areStatesClose(newState, this.serverSyncState)) {
       return false;
     }
     return true;
@@ -146,8 +148,8 @@ export default class SyncManager {
       );
       const desiredState = this.serverSyncState;
       while (
-        desiredState == this.serverSyncState &&
-        !areStatesClose(this.computePlayerSyncState(), desiredState)
+        desiredState === this.serverSyncState &&
+        (!areStatesClose(this.computePlayerSyncState(), desiredState))
       ) {
         console.log(
           "calling player setState: (playing = " +
@@ -159,7 +161,7 @@ export default class SyncManager {
         this.player.setState(this.serverSyncState.playing, stateGetPosition(this.serverSyncState));
         do {
           await sleep(100);
-        } while (desiredState == this.serverSyncState && this.player.isBuffering());
+        } while (desiredState === this.serverSyncState && this.player.isBuffering());
       }
       this.clientSynchronizingWithServer = false;
       console.log("done synchronizing with latest server syncstate: " + this.serverSyncState.seqNo);
