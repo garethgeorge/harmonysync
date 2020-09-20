@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
-    "lib": ["es2017", "es7", "es6", "DOM"],
+    "lib": ["es6", "DOM"],
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist",
-    "charset": "utf8"
+    "charset": "utf8",
+    "jsx": "react",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "Node"
   },
   "exclude": [
     "node_modules",

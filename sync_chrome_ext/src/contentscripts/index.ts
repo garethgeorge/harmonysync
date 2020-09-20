@@ -5,6 +5,8 @@ import SyncManager from "./sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
 import SocketTransport from "./socket_transport";
 
+// import "./components/main.tsx";
+
 setTimeout(() => {
   const overlays: [typeof Overlay] = [
     TestOverlay
