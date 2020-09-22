@@ -12,5 +12,9 @@ jobs:
           node-version: "12"
       - run: npm install
         working-directory: sync_chrome_ext
+      - run: npm install 
+        working-directory: sync_service
+      - run: npm start & 
+        working-directory: sync_service
       - run: npm test
         working-directory: sync_chrome_ext
