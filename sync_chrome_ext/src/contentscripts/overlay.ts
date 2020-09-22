@@ -6,6 +6,7 @@ export default interface Overlay {
   canHandlePage(): boolean;
   name(): string;
   getPlayer(): Player;
+  applyUI(): void;
 }
 
 export default class BaseOverlay implements Overlay {
@@ -30,13 +31,24 @@ export default class BaseOverlay implements Overlay {
     return new BasicWebVideoPlayer(mediaElement)
   }
 
+  applyUI(): void {
+    // noop
+  }
+
   //
   // Helper Methods for internal interface
   //
-  protected findVideoPlayer(): HTMLMediaElement {
+  protected findVideoPlayer(): HTMLMediaElement | null {
     const videoPlayer = this.window.document.querySelector("video");
     if (!videoPlayer)
       return null;
     return videoPlayer as HTMLMediaElement;
+  }
+
+  protected findVideoPlayerContainer(): HTMLElement | null {
+    const player = this.findVideoPlayer();
+    if (!player)
+      return null;
+    return player.parentElement;
   }
 }
