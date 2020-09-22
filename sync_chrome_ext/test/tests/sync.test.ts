@@ -9,7 +9,7 @@ import MockPlayer from "../mocks/mock_player";
 import { Player } from "../../src/contentscripts/sync/player";
 
 describe("sync manager", () => {
-  for (const delay of [0, 10, 100]) {
+  for (const delay of [0, 10]) {
     describe("with " + delay + "ms of delay", () => {
       let socket: SocketIOClient.Socket | null = null;
       let syncManager: SyncManager = null;
@@ -43,7 +43,7 @@ describe("sync manager", () => {
 
         syncManager.once("appliedSyncState", () => {
           expect(
-            areStatesClose(syncManager.getDesiredSyncState(), receivedSyncState)
+            areStatesClose(syncManager.computePlayerSyncState(), receivedSyncState)
           ).to.be.true;
           callback();
         });
