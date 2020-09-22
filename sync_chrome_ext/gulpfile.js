@@ -14,8 +14,8 @@ const getJsonFile = (path) => {
 };
 
 //
-// configure browserify 
-// 
+// configure browserify
+//
 mkdirp.sync("./build/bundle");
 const b = browserify({
   debug: true,
@@ -44,7 +44,7 @@ exports.watch = function watch_task() {
     return res;
   });
   return bundle();
-}
+};
 
 exports.browserify = function browserify_task() {
   return bundle();
@@ -55,8 +55,8 @@ exports.protocjs = function protoc_js() {
     .src("../protos/*.proto")
     .pipe(
       protobuf.pbjs({
-        target: "static-module",
-        wrap: "commonjs",
+        "target": "static-module",
+        "wrap": "commonjs",
         "force-number": true,
       })
     )
@@ -72,7 +72,4 @@ exports.protocts = function protoc_ts() {
 
 exports.protos = gulp.series(exports.protocjs, exports.protocts);
 
-exports.default = gulp.series(
-  exports.protos,
-  exports.browserify
-);
+exports.default = gulp.series(exports.protos, exports.browserify);

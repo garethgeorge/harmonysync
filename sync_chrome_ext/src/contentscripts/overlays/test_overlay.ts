@@ -3,7 +3,10 @@ import BaseOverlay from "../overlay";
 
 export default class TestOverlay extends BaseOverlay {
   canHandlePage() {
-    return this.window.document.title === "HarmonySyncTest" && !!this.findVideoPlayer();
+    return (
+      this.window.document.title === "HarmonySyncTest" &&
+      !!this.findVideoPlayer()
+    );
   }
 
   name() {

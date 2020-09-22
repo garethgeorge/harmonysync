@@ -1,1 +1,1 @@
-// stub for mocha 
+// stub for mocha

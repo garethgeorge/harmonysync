@@ -1,5 +1,4 @@
-import {Player, BasicWebVideoPlayer} from "./sync/player";
-
+import { Player, BasicWebVideoPlayer } from "./sync/player";
 
 export default interface Overlay {
   constructor(window: Window);
@@ -14,7 +13,7 @@ export default class BaseOverlay implements Overlay {
   constructor(window: Window) {
     this.window = window;
   }
-  
+
   canHandlePage() {
     return false;
   }
@@ -28,7 +27,7 @@ export default class BaseOverlay implements Overlay {
     if (!mediaElement) {
       throw new Error("could not find the HTML video player object");
     }
-    return new BasicWebVideoPlayer(mediaElement)
+    return new BasicWebVideoPlayer(mediaElement);
   }
 
   applyUI(): void {
@@ -40,15 +39,13 @@ export default class BaseOverlay implements Overlay {
   //
   protected findVideoPlayer(): HTMLMediaElement | null {
     const videoPlayer = this.window.document.querySelector("video");
-    if (!videoPlayer)
-      return null;
+    if (!videoPlayer) return null;
     return videoPlayer as HTMLMediaElement;
   }
 
   protected findVideoPlayerContainer(): HTMLElement | null {
     const player = this.findVideoPlayer();
-    if (!player)
-      return null;
+    if (!player) return null;
     return player.parentElement;
   }
 }

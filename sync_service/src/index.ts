@@ -21,26 +21,26 @@ let syncState = new sync_pb.SyncState({
   TODO(gareth): finish implementing rooms
 */
 class Room {
-  private clients: {[clientId: string]: Client};
+  private clients: { [clientId: string]: Client };
 
   constructor(private id: string) {
     this.clients = {};
   }
 
-  addClient(client: Client) {
-    
-  }
+  addClient(client: Client) {}
 }
 
 class Client {
-  private static allClients: {[clientId: string]: Client} = {};
+  private static allClients: { [clientId: string]: Client } = {};
 
   public mediator: RPCMediator;
   public syncRpcClient: sync_pb.ClientSyncService;
 
   constructor(private socket: SocketIO.Socket) {
     this.mediator = new RPCMediator(new SocketTransport(socket));
-    this.syncRpcClient = new sync_pb.ClientSyncService(this.mediator.makeRpcClientImpl() as any);
+    this.syncRpcClient = new sync_pb.ClientSyncService(
+      this.mediator.makeRpcClientImpl() as any
+    );
 
     this.mediator.on("error", console.log);
     this.socket.on("error", (message) => {
@@ -48,7 +48,7 @@ class Client {
     });
   }
 
-  init() {    
+  init() {
     this.socket.on("disconnect", () => {
       delete Client.allClients[this.socket.id];
     });
@@ -61,18 +61,17 @@ class Client {
   }
 
   addMethods() {
-
     this.mediator.addMethod(
       "getServerVersion",
-      sync_pb.Empty.decode, 
+      sync_pb.Empty.decode,
       sync_pb.ServerProtocolVersion.encode,
       sync_pb.ServerProtocolVersion.verify,
       async (request) => {
         return {
-          version: "1.0.0"
+          version: "1.0.0",
         };
       }
-    )
+    );
 
     this.mediator.addMethod(
       "setSyncState",
@@ -80,16 +79,18 @@ class Client {
       sync_pb.SetSyncStateResp.encode,
       sync_pb.SetSyncStateResp.verify,
       async (request) => {
-        if (!request.newSyncState) 
-          throw new Error("no newSyncState provided");
+        if (!request.newSyncState) throw new Error("no newSyncState provided");
         const newSyncState = new sync_pb.SyncState(request.newSyncState);
-  
-        console.log("received request to set server sync state to ", newSyncState);
+
+        console.log(
+          "received request to set server sync state to ",
+          newSyncState
+        );
         if (newSyncState.seqNo === syncState.seqNo + 1) {
           console.log("\taccepted request!");
           syncState = newSyncState;
           console.log("sending out sync commands to clients");
-          
+
           // TODO(gareth): synchronize with room
           for (const client of Object.values(Client.allClients)) {
             if (client !== this) {
@@ -102,8 +103,8 @@ class Client {
           });
         } else {
           console.log("\trejected request!");
-          
-          // send them the proper sync state, they have gotten desync'd 
+
+          // send them the proper sync state, they have gotten desync'd
           this.setSyncStateOnClient(syncState);
 
           return new sync_pb.SetSyncStateResp({
@@ -113,16 +114,22 @@ class Client {
       }
     );
 
-    this.mediator.addMethod("requestResync", sync_pb.RequestResyncReq.decode, sync_pb.Empty.encode, sync_pb.Empty.verify, async (request) => {
-      if (request.clientLatestSeqNo !== syncState.seqNo) {
-        this.setSyncStateOnClient(syncState);
+    this.mediator.addMethod(
+      "requestResync",
+      sync_pb.RequestResyncReq.decode,
+      sync_pb.Empty.encode,
+      sync_pb.Empty.verify,
+      async (request) => {
+        if (request.clientLatestSeqNo !== syncState.seqNo) {
+          this.setSyncStateOnClient(syncState);
+        }
+        return {}; // returns empty
       }
-      return {}; // returns empty
-    });
+    );
   }
 
   setSyncStateOnClient(syncState) {
-    console.log("sending syncState to client: ", syncState)
+    console.log("sending syncState to client: ", syncState);
     return this.syncRpcClient.setSyncState(syncState);
   }
 

@@ -4,6 +4,10 @@ import { sleep } from "../util";
 import { Player } from "./player";
 import { RPCMediator } from "protorpcjs";
 import { version } from "../config";
+import EventEmitter from "eventemitter3";
+import { isThisTypeNode } from "typescript";
+import Debug from "debug";
+const debug = Debug("ext:syncmanager");
 
 const getTimeSeconds = () => {
   return new Date().getTime() / 1000.0;
@@ -15,7 +19,7 @@ const stateGetPosition = (state: sync_pb.SyncState) => {
   } else return state.lastSyncPosition;
 };
 
-const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
+export const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
   // does the playback state differ?
   if (a.playing !== b.playing) {
     return false;
@@ -27,7 +31,7 @@ const areStatesClose = (a: sync_pb.SyncState, b: sync_pb.SyncState) => {
   return true;
 };
 
-export default class SyncManager {
+export default class SyncManager extends EventEmitter {
   private syncRpcClient: sync_pb.ServerSyncService;
   private serverSyncState?: sync_pb.SyncState;
 
@@ -35,36 +39,44 @@ export default class SyncManager {
   private clientSynchronizingWithServer: boolean;
 
   constructor(private rpcMediator: RPCMediator, private player: Player) {
-    this.serverSyncState = null;
-    this.syncRpcClient = new sync_pb.ServerSyncService(rpcMediator.makeRpcClientImpl());
+    super();
 
-    this.rpcMediator.on("error", console.log);
+    this.serverSyncState = null;
+    this.syncRpcClient = new sync_pb.ServerSyncService(
+      rpcMediator.makeRpcClientImpl()
+    );
+
+    this.rpcMediator.on("error", (error) => {
+      this.emit("error", error);
+    });
 
     this.lock = new AsyncLock();
     this.subscribeEvents();
   }
 
   subscribeEvents() {
-    this.player.setStateChangeCallback(() => {
+    this.player.addStateChangeCallback(() => {
       this.trySubmitSyncState();
     });
 
-    console.log("subscribing to events...");
     this.rpcMediator.addMethod(
       "setSyncState",
       sync_pb.SyncState.decode,
       sync_pb.Empty.encode,
       sync_pb.Empty.verify,
       async (syncState) => {
-        console.log("got new SyncState from server: ", syncState);
+        debug("got new SyncState from server: %o", syncState);
         this.serverSyncState = sync_pb.SyncState.create(syncState);
-        console.log("set local sync state to: ", this.serverSyncState);
+        this.emit("serverSetSyncState", syncState);
+
+        debug("set local sync state to: %o", this.serverSyncState);
         await this.applyServerSyncState().then(() => {
-          console.log("applied sync state");
+          debug("applied sync state");
         });
 
-        console.log("sending back sync_pb.Empty() to server to indicate we completed");
-
+        debug(
+          "sending back sync_pb.Empty() to server to indicate we completed"
+        );
         return new sync_pb.Empty({});
       }
     );
@@ -96,7 +108,7 @@ export default class SyncManager {
 
   async trySubmitSyncState() {
     if (!this.canSubmitSyncState()) {
-      console.log("syncstate should not be submitted -- we are out of sync");
+      debug("syncstate should not be submitted -- we are out of sync");
       return;
     }
 
@@ -104,26 +116,31 @@ export default class SyncManager {
     await this.lock.acquire("sync", async () => {
       const newState = this.computePlayerSyncState();
       if (!this.canSubmitSyncState()) {
-        console.log("syncstate should not be submitted -- we are out of sync");
+        debug("syncstate should not be submitted -- we are out of sync");
         return;
       }
 
-      console.log("client submitting local sync state to server with seqno: " + newState.seqNo);
+      this.emit("trySubmitSyncState");
+
+      debug(
+        "client submitting local sync state to server with seqno: " +
+          newState.seqNo
+      );
 
       const resp = await this.syncRpcClient.setSyncState({
         newSyncState: newState,
       });
 
-      console.log("set sync state response: ", resp);
+      debug("set sync state response: ", resp);
 
       if (resp.status == sync_pb.SetSyncStateResp.Status.ACCEPT) {
-        console.log("server accepted client's syncstate");
+        debug("server accepted client's syncstate");
         this.serverSyncState = newState;
       } else {
-        console.log("server rejected client's syncstate -- we are out of sync");
+        debug("server rejected client's syncstate -- we are out of sync");
         this.serverSyncState = null;
-        // this.requestResync();
       }
+      this.emit("triedToSubmitSyncState");
     });
   }
 
@@ -143,28 +160,44 @@ export default class SyncManager {
       }
 
       this.clientSynchronizingWithServer = true;
-      console.log(
-        "starting synchronizing with latest server syncstate: " + this.serverSyncState.seqNo
+      this.emit("applyingSyncState");
+      debug(
+        "starting synchronizing with latest server syncstate: " +
+          this.serverSyncState.seqNo
       );
       const desiredState = this.serverSyncState;
       while (
         desiredState === this.serverSyncState &&
-        (!areStatesClose(this.computePlayerSyncState(), desiredState))
+        !areStatesClose(this.computePlayerSyncState(), desiredState)
       ) {
-        console.log(
+        debug(
           "calling player setState: (playing = " +
             this.serverSyncState.playing +
             ", position = " +
             stateGetPosition(this.serverSyncState) +
             ")"
         );
-        this.player.setState(this.serverSyncState.playing, stateGetPosition(this.serverSyncState));
+        this.player.setState(
+          this.serverSyncState.playing,
+          stateGetPosition(this.serverSyncState)
+        );
         do {
           await sleep(100);
-        } while (desiredState === this.serverSyncState && this.player.isBuffering());
+        } while (
+          desiredState === this.serverSyncState &&
+          this.player.isBuffering()
+        );
       }
       this.clientSynchronizingWithServer = false;
-      console.log("done synchronizing with latest server syncstate: " + this.serverSyncState.seqNo);
+      debug(
+        "done synchronizing with latest server syncstate: " +
+          this.serverSyncState.seqNo
+      );
+      this.emit("appliedSyncState");
     });
+  }
+
+  getDesiredSyncState() {
+    return this.serverSyncState;
   }
 }
