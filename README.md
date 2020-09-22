@@ -1,5 +1,7 @@
 # Installation
 
+![sync_chrome_ext](https://github.com/garethgeorge/harmonysync/workflows/sync_chrome_ext/badge.svg)
+
 ## Chrome Extension
 
 ```
