@@ -24,28 +24,63 @@ class Room {
 
   constructor(private id: string) {}
 
-  addUser(user: User) {
-    this.users.push(user);
-    user.room = this;
+  /**
+   * adds a new user and dispatches the appropriate events to notify 
+   * other users of the change
+   * @param newUser
+   */
+  addUser(newUser: User) {
+    newUser.room = this;
 
     // send the initial sync state to the client as a fire and forget
-    user.syncRpcClient.setSyncState(this.syncState);
+    newUser.syncRpcClient.setSyncState(this.syncState);
 
-    // send the initial user list to the client 
-    user.mediator.sendEvent("user_list", sesh_pb.UserList.encode({
+    // send the initial user list to the new user
+    newUser.mediator.sendEvent("user_list", sesh_pb.UserList.encode({
       addedUsers: this.users.map(user => {
         return sesh_pb.UserInfo.create({
           id: user.id,
-          name: user.
+          name: user.name,
         })
       })
     }).finish());
+
+    // notify all existing users of the new user
+    const newUserEvent = sesh_pb.UserList.encode({
+      addedUsers: [
+        sesh_pb.UserInfo.create({
+          id: newUser.id,
+          name: newUser.name,
+        })
+      ],
+      droppedUserIds: [],
+    }).finish();
+
+    for (const user of this.users) {
+      user.mediator.sendEvent("update_users", newUserEvent);
+    }
+
+    // add the new user to the room's users list
+    this.users.push(newUser);
   }
 
+  /**
+   * removes an existing user and dispatches the proper event to notify other
+   * connected clients of the change
+   * @param toRemove 
+   */
   removeUser(toRemove: User) {
     this.users = this.users.filter((user: User) => {
       return user !== toRemove;
     });
+
+    const removedUserEvent = sesh_pb.UserList.encode({
+      droppedUserIds: [toRemove.id]
+    }).finish();
+
+    for (const user of this.users) {
+      user.mediator.sendEvent("update_users", removedUserEvent);
+    }
   }
 
   size() {
@@ -57,7 +92,7 @@ class Room {
   }
 
   // TODO: address possible timeout issues here
-  async setSyncState(syncState: sync_pb.SyncState, requester: Client = null) {
+  async setSyncState(syncState: sync_pb.SyncState, requester: User = null) {
     if (syncState.seqNo !== this.syncState.seqNo + 1) {
       throw new Error("sync state must have seqNo 1 greater than current");
     }
@@ -138,6 +173,10 @@ class User {
       }
     );
 
+    // TODO: join room req
+    // TODO: create room req
+    // TODO: send message req 
+
     this.mediator.addMethod(
       "setSyncState",
       sync_pb.SetSyncStateReq.decode,
@@ -176,8 +215,11 @@ class User {
         if (!this.isAuthed()) {
           throw new Error("auth required");
         }
+        if (!this.room) {
+          throw new Error("must be in a room");
+        }
 
-        if (request.clientLatestSeqNo !== syncState.seqNo) {
+        if (request.clientLatestSeqNo !== this.room.getSyncState().seqNo) {
           this.syncRpcClient.setSyncState(this.room.getSyncState());
         }
         return {}; // returns empty
@@ -188,7 +230,7 @@ class User {
 
 io.on("connection", (socket: SocketIO.Socket) => {
   console.log("client did connect");
-  new Client(socket).init();
+  new User(socket);
 });
 
 server.listen(3000, () => {
