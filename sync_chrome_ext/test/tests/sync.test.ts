@@ -4,7 +4,7 @@ import SyncManager, {
   areStatesClose,
 } from "../../src/contentscripts/sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
-import SocketTransport from "../../src/contentscripts/socket_transport";
+import SocketTransport from "../../src/contentscripts/transports/socket_transport";
 import MockPlayer from "../mocks/mock_player";
 import { Player } from "../../src/contentscripts/sync/player";
 
@@ -54,6 +54,32 @@ describe("sync manager", () => {
       });
 
       // TODO: add test of setting sync state
+      it("should first receive initial sync state from server", (callback) => {
+        // let recievedSyncState;
+        syncManager.once("appliedSyncState", () => {
+          // set state to likee 50
+          // action phase
+
+          // validation phase
+          let trySubmitSyncStateBool = false;
+          syncManager.on("trySubmitSyncState", () => {
+            //make boolean try to
+            trySubmitSyncStateBool = true;
+          });
+          //expect boolean changed tto ttrue and get the callback
+          //properly check thte sync state
+          syncManager.on("triedToSubmitSyncState", (syncState) => {
+            expect(trySubmitSyncStateBool).to.be.true;
+            expect(syncState).to.not.be.null;
+            callback();
+          });
+
+          player.setState(true, 2);
+          // once this event is received for the first time we have received initial sync
+          // it is now okay to set a new sync state and wait for events
+        });
+      });
+      
     });
   }
 

@@ -20,7 +20,6 @@ mkdirp.sync("./build/bundle");
 const b = browserify({
   debug: true,
   entries: ["./src/contentscripts/index.ts"],
-  plugin: [watchify],
   cache: {},
   packageCache: {},
 });
@@ -38,8 +37,8 @@ function bundle() {
 }
 
 exports.watch = function watch_task() {
+  b.plugin(watchify);
   b.on("update", () => {
-    console.log("bundling ts and tsx components...");
     const res = bundle();
     return res;
   });

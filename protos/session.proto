@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+service SessionService {
+  rpc getServerVersion(Empty) returns (ServerProtocolVersion) {};
+
+  // general actions
+  rpc auth(UserAuthReq) returns (UserAuthResp) {};
+  rpc createRoom(Empty) returns (RoomInfo) {};
+  rpc joinRoom(JoinRoomReq) returns (JoinRoomResp) {};
+
+  // room actions 
+  rpc sendMessage(SendMessageReq) returns (Empty) {};
+}
+
+message Empty { }
+
+message ServerProtocolVersion {
+  string version = 1;
+}
+
+// requests / responses
+
+message UserAuthReq {
+  string name = 1;
+}
+
+message UserAuthResp {
+  UserInfo user_info = 1;
+}
+
+message JoinRoomReq {
+  string id = 1;
+  string password = 2;
+}
+
+message JoinRoomResp {
+  oneof status {
+    string error = 1;
+    RoomInfo room_info = 2;
+  }
+}
+
+message SendMessageReq {
+  string text = 1;
+}
+
+message GetUserInfoReq {
+  int32 id = 1;
+}
+
+// events 
+message UserList {
+  repeated UserInfo added_users = 1;
+  repeated int32 dropped_user_ids = 2;
+}
+
+// data
+
+message UserInfo {
+  int32 id = 1;
+  string name = 2;
+}
+
+message VideoInfo {
+  string url = 1;
+}
+
+message RoomInfo {
+  string id = 1;
+}
+
+message Message {
+  int32 sender_id = 1;
+  string text = 2;
+}
