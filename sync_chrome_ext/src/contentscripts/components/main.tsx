@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import * as css from './ChatOverlay.css';
+// import * as css from './ChatOverlay.css';
 
 interface MessageProps {
     message: string;
@@ -10,7 +10,7 @@ interface MessageState {}
 class Message extends React.Component<MessageProps, MessageState> {
     render() {
         return (
-            <p>
+            <p class="chatMessage">
                 { this.props.message }
             </p>
         );
@@ -26,6 +26,7 @@ interface ChatState {
 declare module 'react' {
     interface DOMAttributes<T> {
         class?: string;
+        id?: string;
     }
 }
 
@@ -40,10 +41,12 @@ class ChatOverlay extends React.Component<ChatProps, ChatState> {
     // handleMessage(e: React.ChangeEvent<HTMLInputElement>) {
     handleMessage(e: React.KeyboardEvent) {
         if(e.key === 'Enter') {
-            this.setState({
-                messages: this.state.messages.concat((e.target as HTMLInputElement).value)
-            });
-            (e.target as HTMLInputElement).value = "";
+            if((e.target as HTMLInputElement).value != "") {
+                this.setState({
+                    messages: this.state.messages.concat((e.target as HTMLInputElement).value)
+                });
+                (e.target as HTMLInputElement).value = "";
+            }
         }
     }
     render() {
@@ -52,16 +55,42 @@ class ChatOverlay extends React.Component<ChatProps, ChatState> {
             elements.push(<Message message={ this.state.messages[i] }/>);
         }
         return (
-            <div class="chatoverlay">
-                <h1>Chat</h1>
-                <div class="chatMessages">
+            <div id="chatoverlay">
+                <h3 id="chatHeader">Chat</h3>
+                <div id="chatMessages">
                     {elements}
                 </div>
-                <input class="chatInput" onKeyDown={this.handleMessage.bind(this)}></input>
+                <input id="chatInput" onKeyDown={this.handleMessage.bind(this)}></input>
             </div>
         );
     }
 }
 
+function dragElement(element: HTMLElement, dragBox: HTMLElement) {
+    let x1:number = 0, y1:number = 0, x2:number = 0, y2:number = 0;
+    dragBox.onmousedown = dragMouseDown;
+    function dragMouseDown(e: MouseEvent) {
+        e.preventDefault();
+        x1 = e.clientX;
+        y1 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+    function elementDrag(e: MouseEvent) {
+        e.preventDefault();
+        x2 = x1 - e.clientX;
+        y2 = y1 - e.clientY;
+        x1 = e.clientX;
+        y1 = e.clientY;
+        element.style.left = (element.offsetLeft - x2) + "px";
+        element.style.top = (element.offsetTop - y2) + "px";
+    }
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
 // ReactDOM.render(<p>HELLO WORLD</p>, document.getElementById("myTestDiv"));
 ReactDOM.render(<ChatOverlay />, document.getElementById("myTestDiv"));
+dragElement(document.getElementById("chatoverlay"), document.getElementById("chatHeader"))
