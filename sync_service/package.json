@@ -9,6 +9,8 @@
   "author": "thelastpenguin",
   "license": "ISC",
   "devDependencies": {
+    "@types/react": "^16.9.49",
+    "@types/react-dom": "^16.9.8",
     "ts-node-dev": "^1.0.0-pre.62"
   },
   "dependencies": {
