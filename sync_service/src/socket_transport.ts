@@ -34,7 +34,7 @@ export default class SocketTransport
   static printData(data: Uint8Array) {
     const bytes = [];
     for (let i = 0; i < data.length; ++i) {
-      bytes.push('' + data[i]);
+      bytes.push("" + data[i]);
     }
     return "[length = " + data.length + "; " + bytes.join(",") + "]";
   }

@@ -4,7 +4,7 @@ export interface Player {
   isBuffering(): boolean;
 
   setState(playing: boolean, position: number): void;
-  setStateChangeCallback(callback: any): void;
+  addStateChangeCallback(callback: () => void): void;
 }
 
 export class BasicWebVideoPlayer implements Player {
@@ -46,7 +46,7 @@ export class BasicWebVideoPlayer implements Player {
     this.video.currentTime = position;
   }
 
-  setStateChangeCallback(callback) {
+  addStateChangeCallback(callback) {
     this.video.addEventListener("seeked", callback);
     this.video.addEventListener("play", callback);
     this.video.addEventListener("pause", callback);

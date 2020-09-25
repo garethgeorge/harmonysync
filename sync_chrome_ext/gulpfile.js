@@ -6,27 +6,47 @@ const tsify = require("tsify");
 const fs = require("fs");
 const exorcist = require("exorcist");
 const mkdirp = require("mkdirp");
+const watchify = require("watchify");
 
+// declare some utilities
 const getJsonFile = (path) => {
   return JSON.parse(fs.readFileSync(path));
 };
 
-exports.browserify = function browserify_task() {
-  const b = browserify({
-    debug: true,
-    entries: ["./src/contentscripts/index.ts"],
-  });
+//
+// configure browserify
+//
+mkdirp.sync("./build/bundle");
+const b = browserify({
+  debug: true,
+  entries: ["./src/contentscripts/index.ts"],
+  cache: {},
+  packageCache: {},
+});
+b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
+b.transform(babelify, {
+  presets: ["env", "react"],
+});
 
-  b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
-  b.transform(babelify, {
-    presets: ["env", "react"],
-  });
-
-  mkdirp.sync("./build/bundle");
+// provide gulp tasks for bundle and watched bundler
+function bundle() {
   return b
     .bundle()
     .pipe(exorcist("./build/bundle/contentscript_bundle.js.map"))
     .pipe(fs.createWriteStream("./build/bundle/contentscript_bundle.js"));
+}
+
+exports.watch = function watch_task() {
+  b.plugin(watchify);
+  b.on("update", () => {
+    const res = bundle();
+    return res;
+  });
+  return bundle();
+};
+
+exports.browserify = function browserify_task() {
+  return bundle();
 };
 
 exports.protocjs = function protoc_js() {
@@ -34,8 +54,8 @@ exports.protocjs = function protoc_js() {
     .src("../protos/*.proto")
     .pipe(
       protobuf.pbjs({
-        target: "static-module",
-        wrap: "commonjs",
+        "target": "static-module",
+        "wrap": "commonjs",
         "force-number": true,
       })
     )
@@ -51,7 +71,4 @@ exports.protocts = function protoc_ts() {
 
 exports.protos = gulp.series(exports.protocjs, exports.protocts);
 
-exports.default = gulp.series(
-  exports.protos,
-  exports.browserify
-);
+exports.default = gulp.series(exports.protos, exports.browserify);

@@ -29,7 +29,10 @@ export default class SocketTransport
   }
 
   send(data: Uint8Array): void {
-    this.socket.emit("srvpkt", data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength));
+    this.socket.emit(
+      "srvpkt",
+      data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+    );
   }
 
   close(): void {
