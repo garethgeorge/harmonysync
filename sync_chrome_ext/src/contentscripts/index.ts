@@ -3,7 +3,8 @@ import TestOverlay from "./overlays/test_overlay";
 import SocketIOClient from "socket.io-client";
 import SyncManager from "./sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
-import SocketTransport from "./socket_transport";
+import SocketTransport from "./transports/socket_transport";
+import { SessionManager } from "./session";
 
 setTimeout(() => {
   const overlays: [typeof Overlay] = [TestOverlay];
@@ -32,5 +33,6 @@ setTimeout(() => {
 
     console.log("constructing the sync manager");
     const syncManager = new SyncManager(mediator, playerWrapper);
+    const sessionManager = new SessionManager(mediator);
   }
 }, 2000);

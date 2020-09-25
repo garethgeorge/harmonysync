@@ -80,14 +80,6 @@ export default class SyncManager extends EventEmitter {
         return new sync_pb.Empty({});
       }
     );
-
-    this.syncRpcClient.getServerVersion({}).then((serverVersionInfo) => {
-      if (serverVersionInfo.version !== version) {
-        alert(
-          "Server / client version mismatch... you may encounter errors. Please update the extension."
-        );
-      }
-    });
   }
 
   async requestResync() {
