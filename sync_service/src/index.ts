@@ -43,9 +43,6 @@ class Room {
     newUser.room = this;
     this.users.push(newUser);
 
-    // send the initial sync state to the client as a fire and forget
-    newUser.syncRpcClient.setSyncState(this.syncState);
-
     // notify all existing users of the new user
     const newUserEvent = sesh_pb.UsersDiff.encode({
       addedUsers: [
@@ -200,6 +197,11 @@ class User {
         const room = new Room();
         room.addUser(this);
 
+        setImmediate(() => {
+          // send the initial sync state to the client as a fire and forget
+          this.syncRpcClient.setSyncState(room.getSyncState());
+        })
+
         return room.toRoomInfo();
       }
     );
@@ -219,6 +221,11 @@ class User {
         }
 
         room.addUser(this);
+
+        setImmediate(() => {
+          // send the initial sync state to the client as a fire and forget
+          this.syncRpcClient.setSyncState(room.getSyncState());
+        })
 
         return room.toRoomInfo();
       }

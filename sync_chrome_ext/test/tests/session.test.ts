@@ -1,37 +1,10 @@
-import chaiAsPromised from "chai-as-promised"
+import chaiAsPromised from "chai-as-promised";
 import chai, { expect } from "chai";
-import SocketIOClient from "socket.io-client";
-import SyncManager, {
-  areStatesClose,
-} from "../../src/contentscripts/sync/syncmanager";
-import { RPCMediator } from "protorpcjs";
-import SocketTransport from "../../src/contentscripts/transports/socket_transport";
-import { SessionManager } from "../../src/contentscripts/session";
+import { createMockUser, MockUser } from "../mocks/mock_user";
 
 chai.use(chaiAsPromised);
 
-interface MockUser {
-  socket: SocketIOClient.Socket | null;
-  sessionManager: SessionManager | null;
-}
-
-const createMockUser = () => {
-  const socket = SocketIOClient("http://localhost:3000", {
-    transports: ["websocket"], // try this to start with :P
-  });
-
-  const transport = new SocketTransport(socket);
-  const mediator = new RPCMediator(transport);
-  const sessionManager = new SessionManager(mediator);
-
-  return {
-    socket,
-    sessionManager
-  }
-}
-
 describe("session manager", () => {
-
   let mock1: MockUser;
   let mock2: MockUser;
 
@@ -61,7 +34,8 @@ describe("session manager", () => {
 
   it("should not let user auth twice", async () => {
     const resp = await mock1.sessionManager.connect("testUser");
-    await expect(mock1.sessionManager.connect("testUser")).to.eventually.be.rejected;
+    await expect(mock1.sessionManager.connect("testUser")).to.eventually.be
+      .rejected;
   });
 
   it("should let authed user create a room", async () => {
