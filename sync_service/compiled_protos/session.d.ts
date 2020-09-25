@@ -64,7 +64,7 @@ export class SessionService extends $protobuf.rpc.Service {
     /**
      * Calls joinRoom.
      * @param request JoinRoomReq message or plain object
-     * @param callback Node-style callback called with the error, if any, and JoinRoomResp
+     * @param callback Node-style callback called with the error, if any, and RoomInfo
      */
     public joinRoom(request: IJoinRoomReq, callback: SessionService.joinRoomCallback): void;
 
@@ -73,7 +73,7 @@ export class SessionService extends $protobuf.rpc.Service {
      * @param request JoinRoomReq message or plain object
      * @returns Promise
      */
-    public joinRoom(request: IJoinRoomReq): Promise<JoinRoomResp>;
+    public joinRoom(request: IJoinRoomReq): Promise<RoomInfo>;
 
     /**
      * Calls sendMessage.
@@ -116,9 +116,9 @@ export namespace SessionService {
     /**
      * Callback as used by {@link SessionService#joinRoom}.
      * @param error Error, if any
-     * @param [response] JoinRoomResp
+     * @param [response] RoomInfo
      */
-    type joinRoomCallback = (error: (Error|null), response?: JoinRoomResp) => void;
+    type joinRoomCallback = (error: (Error|null), response?: RoomInfo) => void;
 
     /**
      * Callback as used by {@link SessionService#sendMessage}.
@@ -217,6 +217,9 @@ export interface IServerProtocolVersion {
 
     /** ServerProtocolVersion version */
     version?: (string|null);
+
+    /** ServerProtocolVersion motd */
+    motd?: (string|null);
 }
 
 /** Represents a ServerProtocolVersion. */
@@ -230,6 +233,9 @@ export class ServerProtocolVersion implements IServerProtocolVersion {
 
     /** ServerProtocolVersion version. */
     public version: string;
+
+    /** ServerProtocolVersion motd. */
+    public motd: string;
 
     /**
      * Creates a new ServerProtocolVersion instance using the specified properties.
@@ -487,9 +493,6 @@ export interface IJoinRoomReq {
 
     /** JoinRoomReq id */
     id?: (string|null);
-
-    /** JoinRoomReq password */
-    password?: (string|null);
 }
 
 /** Represents a JoinRoomReq. */
@@ -503,9 +506,6 @@ export class JoinRoomReq implements IJoinRoomReq {
 
     /** JoinRoomReq id. */
     public id: string;
-
-    /** JoinRoomReq password. */
-    public password: string;
 
     /**
      * Creates a new JoinRoomReq instance using the specified properties.
@@ -573,105 +573,6 @@ export class JoinRoomReq implements IJoinRoomReq {
 
     /**
      * Converts this JoinRoomReq to JSON.
-     * @returns JSON object
-     */
-    public toJSON(): { [k: string]: any };
-}
-
-/** Properties of a JoinRoomResp. */
-export interface IJoinRoomResp {
-
-    /** JoinRoomResp error */
-    error?: (string|null);
-
-    /** JoinRoomResp roomInfo */
-    roomInfo?: (IRoomInfo|null);
-}
-
-/** Represents a JoinRoomResp. */
-export class JoinRoomResp implements IJoinRoomResp {
-
-    /**
-     * Constructs a new JoinRoomResp.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IJoinRoomResp);
-
-    /** JoinRoomResp error. */
-    public error: string;
-
-    /** JoinRoomResp roomInfo. */
-    public roomInfo?: (IRoomInfo|null);
-
-    /** JoinRoomResp status. */
-    public status?: ("error"|"roomInfo");
-
-    /**
-     * Creates a new JoinRoomResp instance using the specified properties.
-     * @param [properties] Properties to set
-     * @returns JoinRoomResp instance
-     */
-    public static create(properties?: IJoinRoomResp): JoinRoomResp;
-
-    /**
-     * Encodes the specified JoinRoomResp message. Does not implicitly {@link JoinRoomResp.verify|verify} messages.
-     * @param message JoinRoomResp message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: IJoinRoomResp, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Encodes the specified JoinRoomResp message, length delimited. Does not implicitly {@link JoinRoomResp.verify|verify} messages.
-     * @param message JoinRoomResp message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encodeDelimited(message: IJoinRoomResp, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a JoinRoomResp message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns JoinRoomResp
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): JoinRoomResp;
-
-    /**
-     * Decodes a JoinRoomResp message from the specified reader or buffer, length delimited.
-     * @param reader Reader or buffer to decode from
-     * @returns JoinRoomResp
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): JoinRoomResp;
-
-    /**
-     * Verifies a JoinRoomResp message.
-     * @param message Plain object to verify
-     * @returns `null` if valid, otherwise the reason why it is not
-     */
-    public static verify(message: { [k: string]: any }): (string|null);
-
-    /**
-     * Creates a JoinRoomResp message from a plain object. Also converts values to their respective internal types.
-     * @param object Plain object
-     * @returns JoinRoomResp
-     */
-    public static fromObject(object: { [k: string]: any }): JoinRoomResp;
-
-    /**
-     * Creates a plain object from a JoinRoomResp message. Also converts values to other types if specified.
-     * @param message JoinRoomResp
-     * @param [options] Conversion options
-     * @returns Plain object
-     */
-    public static toObject(message: JoinRoomResp, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-    /**
-     * Converts this JoinRoomResp to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };
@@ -860,11 +761,8 @@ export class GetUserInfoReq implements IGetUserInfoReq {
 /** Properties of a UserList. */
 export interface IUserList {
 
-    /** UserList addedUsers */
-    addedUsers?: (IUserInfo[]|null);
-
-    /** UserList droppedUserIds */
-    droppedUserIds?: (number[]|null);
+    /** UserList users */
+    users?: (IUserInfo[]|null);
 }
 
 /** Represents a UserList. */
@@ -876,11 +774,8 @@ export class UserList implements IUserList {
      */
     constructor(properties?: IUserList);
 
-    /** UserList addedUsers. */
-    public addedUsers: IUserInfo[];
-
-    /** UserList droppedUserIds. */
-    public droppedUserIds: number[];
+    /** UserList users. */
+    public users: IUserInfo[];
 
     /**
      * Creates a new UserList instance using the specified properties.
@@ -948,6 +843,102 @@ export class UserList implements IUserList {
 
     /**
      * Converts this UserList to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a UsersDiff. */
+export interface IUsersDiff {
+
+    /** UsersDiff addedUsers */
+    addedUsers?: (IUserInfo[]|null);
+
+    /** UsersDiff droppedUsers */
+    droppedUsers?: (number[]|null);
+}
+
+/** Represents a UsersDiff. */
+export class UsersDiff implements IUsersDiff {
+
+    /**
+     * Constructs a new UsersDiff.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IUsersDiff);
+
+    /** UsersDiff addedUsers. */
+    public addedUsers: IUserInfo[];
+
+    /** UsersDiff droppedUsers. */
+    public droppedUsers: number[];
+
+    /**
+     * Creates a new UsersDiff instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns UsersDiff instance
+     */
+    public static create(properties?: IUsersDiff): UsersDiff;
+
+    /**
+     * Encodes the specified UsersDiff message. Does not implicitly {@link UsersDiff.verify|verify} messages.
+     * @param message UsersDiff message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IUsersDiff, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified UsersDiff message, length delimited. Does not implicitly {@link UsersDiff.verify|verify} messages.
+     * @param message UsersDiff message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IUsersDiff, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a UsersDiff message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns UsersDiff
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): UsersDiff;
+
+    /**
+     * Decodes a UsersDiff message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns UsersDiff
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): UsersDiff;
+
+    /**
+     * Verifies a UsersDiff message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a UsersDiff message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns UsersDiff
+     */
+    public static fromObject(object: { [k: string]: any }): UsersDiff;
+
+    /**
+     * Creates a plain object from a UsersDiff message. Also converts values to other types if specified.
+     * @param message UsersDiff
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: UsersDiff, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this UsersDiff to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };
@@ -1144,6 +1135,9 @@ export interface IRoomInfo {
 
     /** RoomInfo id */
     id?: (string|null);
+
+    /** RoomInfo userList */
+    userList?: (IUserList|null);
 }
 
 /** Represents a RoomInfo. */
@@ -1157,6 +1151,9 @@ export class RoomInfo implements IRoomInfo {
 
     /** RoomInfo id. */
     public id: string;
+
+    /** RoomInfo userList. */
+    public userList?: (IUserList|null);
 
     /**
      * Creates a new RoomInfo instance using the specified properties.

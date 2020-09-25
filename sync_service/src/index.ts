@@ -8,12 +8,16 @@ import SocketTransport from "./socket_transport";
 import { version } from "./config";
 import Debug from "debug";
 import { pbjs } from "gulp-protobuf";
+import crypto from "crypto";
 
 const app = express();
 const server = http.createServer(app);
 const io = SocketIO(server);
 
 class Room {
+  public static allRooms: {[id: string]: Room} = {};
+
+  private id: string;
   private users: User[] = [];
   private syncState = new sync_pb.SyncState({
     playing: false,
@@ -22,73 +26,59 @@ class Room {
     seqNo: 0,
   });
 
-  constructor(private id: string) {}
+  constructor() {
+    this.id = crypto
+      .randomBytes(12)
+      .toString("base64")
+      .replace(/[\W_]+/g, "");
+    Room.allRooms[this.id] = this;
+  }
 
   /**
-   * adds a new user and dispatches the appropriate events to notify 
+   * adds a new user and dispatches the appropriate events to notify
    * other users of the change
    * @param newUser
    */
   addUser(newUser: User) {
     newUser.room = this;
+    this.users.push(newUser);
 
     // send the initial sync state to the client as a fire and forget
     newUser.syncRpcClient.setSyncState(this.syncState);
 
-    // send the initial user list to the new user
-    newUser.mediator.sendEvent("user_list", sesh_pb.UserList.encode({
-      addedUsers: this.users.map(user => {
-        return sesh_pb.UserInfo.create({
-          id: user.id,
-          name: user.name,
-        })
-      })
-    }).finish());
-
     // notify all existing users of the new user
-    const newUserEvent = sesh_pb.UserList.encode({
+    const newUserEvent = sesh_pb.UsersDiff.encode({
       addedUsers: [
         sesh_pb.UserInfo.create({
           id: newUser.id,
           name: newUser.name,
-        })
+        }),
       ],
-      droppedUserIds: [],
+      droppedUsers: [],
     }).finish();
 
     for (const user of this.users) {
-      user.mediator.sendEvent("update_users", newUserEvent);
+      if (user != newUser)
+        user.mediator.sendEvent("update_users", newUserEvent);
     }
-
-    // add the new user to the room's users list
-    this.users.push(newUser);
   }
-
   /**
    * removes an existing user and dispatches the proper event to notify other
    * connected clients of the change
-   * @param toRemove 
+   * @param toRemove
    */
   removeUser(toRemove: User) {
     this.users = this.users.filter((user: User) => {
       return user !== toRemove;
     });
 
-    const removedUserEvent = sesh_pb.UserList.encode({
-      droppedUserIds: [toRemove.id]
+    const removedUserEvent = sesh_pb.UsersDiff.encode({
+      droppedUsers: [toRemove.id],
     }).finish();
 
     for (const user of this.users) {
       user.mediator.sendEvent("update_users", removedUserEvent);
     }
-  }
-
-  size() {
-    return this.users.length;
-  }
-
-  getSyncState() {
-    return this.syncState;
   }
 
   // TODO: address possible timeout issues here
@@ -106,6 +96,36 @@ class Room {
           user.syncRpcClient.setSyncState(syncState).catch((e) => e)
         )
     );
+  }
+
+  /*
+    Getters
+  */
+
+  size() {
+    return this.users.length;
+  }
+
+  getSyncState() {
+    return this.syncState;
+  }
+
+  getId() {
+    return this.id;
+  }
+
+  toRoomInfo() {
+    return sesh_pb.RoomInfo.create({
+      id: this.id,
+      userList: {
+        users: this.users.map(user => {
+          return sesh_pb.UserInfo.create({
+            id: user.id,
+            name: user.name,
+          })
+        })
+      }
+    });
   }
 }
 
@@ -150,22 +170,65 @@ class User {
       sesh_pb.UserAuthResp.encode,
       sesh_pb.UserAuthResp.verify,
       async (request) => {
+        if (this.isAuthed()) {
+          throw new Error("already authed");
+        }
+
+        if (request.name.length > 30 && request.name.length < 1) {
+          throw new Error("name too long");
+        }
         this.name = request.name;
 
         return {
           userInfo: {
             id: this.id,
             name: this.name,
-          }
-        }
+          },
+        };
+      }
+    );
+    
+    this.mediator.addMethod(
+      "createRoom",
+      sesh_pb.Empty.decode,
+      sesh_pb.RoomInfo.encode,
+      sesh_pb.RoomInfo.verify,
+      async (request) => {
+        if (!this.isAuthed()) throw new Error("auth required");
+        if (this.room) throw new Error("already in room");
+
+        const room = new Room();
+        room.addUser(this);
+
+        return room.toRoomInfo();
       }
     );
 
     this.mediator.addMethod(
+      "joinRoom",
+      sesh_pb.JoinRoomReq.decode,
+      sesh_pb.RoomInfo.encode,
+      sesh_pb.RoomInfo.verify,
+      async (request) => {
+        if (!this.isAuthed()) throw new Error("auth required");
+        if (this.room) throw new Error("already in room")
+        
+        const room = Room.allRooms[request.id];
+        if (!room) {
+          throw new Error("room not found");
+        }
+
+        room.addUser(this);
+
+        return room.toRoomInfo();
+      }
+    )
+
+    this.mediator.addMethod(
       "getServerVersion",
-      sync_pb.Empty.decode,
-      sync_pb.ServerProtocolVersion.encode,
-      sync_pb.ServerProtocolVersion.verify,
+      sesh_pb.Empty.decode,
+      sesh_pb.ServerProtocolVersion.encode,
+      sesh_pb.ServerProtocolVersion.verify,
       async (request) => {
         return {
           version: version,
@@ -175,7 +238,7 @@ class User {
 
     // TODO: join room req
     // TODO: create room req
-    // TODO: send message req 
+    // TODO: send message req
 
     this.mediator.addMethod(
       "setSyncState",
@@ -183,26 +246,23 @@ class User {
       sync_pb.SetSyncStateResp.encode,
       sync_pb.SetSyncStateResp.verify,
       async (request) => {
-        if (!this.isAuthed())
-          throw new Error("auth required");
-        if (!this.room) 
-          throw new Error("must first join a room");
-        if (!request.newSyncState) 
-          throw new Error("new sync state required");
+        if (!this.isAuthed()) throw new Error("auth required");
+        if (!this.room) throw new Error("must first join a room");
+        if (!request.newSyncState) throw new Error("new sync state required");
 
         const newSyncState = new sync_pb.SyncState(request.newSyncState);
 
         if (newSyncState.seqNo !== this.room.getSyncState().seqNo + 1) {
           return {
-            status: sync_pb.SetSyncStateResp.Status.REJECT
-          }
+            status: sync_pb.SetSyncStateResp.Status.REJECT,
+          };
         }
-        
+
         await this.room.setSyncState(newSyncState, this);
-        
+
         return {
-          status: sync_pb.SetSyncStateResp.Status.ACCEPT
-        }
+          status: sync_pb.SetSyncStateResp.Status.ACCEPT,
+        };
       }
     );
 

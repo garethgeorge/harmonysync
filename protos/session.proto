@@ -6,7 +6,7 @@ service SessionService {
   // general actions
   rpc auth(UserAuthReq) returns (UserAuthResp) {};
   rpc createRoom(Empty) returns (RoomInfo) {};
-  rpc joinRoom(JoinRoomReq) returns (JoinRoomResp) {};
+  rpc joinRoom(JoinRoomReq) returns (RoomInfo) {};
 
   // room actions 
   rpc sendMessage(SendMessageReq) returns (Empty) {};
@@ -16,6 +16,7 @@ message Empty { }
 
 message ServerProtocolVersion {
   string version = 1;
+  string motd = 2; // allow showing a MOTD to alert users of planned maintenance etc
 }
 
 // requests / responses
@@ -30,14 +31,6 @@ message UserAuthResp {
 
 message JoinRoomReq {
   string id = 1;
-  string password = 2;
-}
-
-message JoinRoomResp {
-  oneof status {
-    string error = 1;
-    RoomInfo room_info = 2;
-  }
 }
 
 message SendMessageReq {
@@ -50,8 +43,12 @@ message GetUserInfoReq {
 
 // events 
 message UserList {
+  repeated UserInfo users = 1;
+}
+
+message UsersDiff {
   repeated UserInfo added_users = 1;
-  repeated int32 dropped_user_ids = 2;
+  repeated int32 dropped_users = 2;
 }
 
 // data
@@ -67,6 +64,7 @@ message VideoInfo {
 
 message RoomInfo {
   string id = 1;
+  UserList user_list = 2;
 }
 
 message Message {

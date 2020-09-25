@@ -20,20 +20,6 @@ export class ServerSyncService extends $protobuf.rpc.Service {
     public static create(rpcImpl: $protobuf.RPCImpl, requestDelimited?: boolean, responseDelimited?: boolean): ServerSyncService;
 
     /**
-     * Calls getServerVersion.
-     * @param request Empty message or plain object
-     * @param callback Node-style callback called with the error, if any, and ServerProtocolVersion
-     */
-    public getServerVersion(request: IEmpty, callback: ServerSyncService.getServerVersionCallback): void;
-
-    /**
-     * Calls getServerVersion.
-     * @param request Empty message or plain object
-     * @returns Promise
-     */
-    public getServerVersion(request: IEmpty): Promise<ServerProtocolVersion>;
-
-    /**
      * Calls setSyncState.
      * @param request SetSyncStateReq message or plain object
      * @param callback Node-style callback called with the error, if any, and SetSyncStateResp
@@ -63,13 +49,6 @@ export class ServerSyncService extends $protobuf.rpc.Service {
 }
 
 export namespace ServerSyncService {
-
-    /**
-     * Callback as used by {@link ServerSyncService#getServerVersion}.
-     * @param error Error, if any
-     * @param [response] ServerProtocolVersion
-     */
-    type getServerVersionCallback = (error: (Error|null), response?: ServerProtocolVersion) => void;
 
     /**
      * Callback as used by {@link ServerSyncService#setSyncState}.
@@ -210,96 +189,6 @@ export class Empty implements IEmpty {
 
     /**
      * Converts this Empty to JSON.
-     * @returns JSON object
-     */
-    public toJSON(): { [k: string]: any };
-}
-
-/** Properties of a ServerProtocolVersion. */
-export interface IServerProtocolVersion {
-
-    /** ServerProtocolVersion version */
-    version?: (string|null);
-}
-
-/** Represents a ServerProtocolVersion. */
-export class ServerProtocolVersion implements IServerProtocolVersion {
-
-    /**
-     * Constructs a new ServerProtocolVersion.
-     * @param [properties] Properties to set
-     */
-    constructor(properties?: IServerProtocolVersion);
-
-    /** ServerProtocolVersion version. */
-    public version: string;
-
-    /**
-     * Creates a new ServerProtocolVersion instance using the specified properties.
-     * @param [properties] Properties to set
-     * @returns ServerProtocolVersion instance
-     */
-    public static create(properties?: IServerProtocolVersion): ServerProtocolVersion;
-
-    /**
-     * Encodes the specified ServerProtocolVersion message. Does not implicitly {@link ServerProtocolVersion.verify|verify} messages.
-     * @param message ServerProtocolVersion message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encode(message: IServerProtocolVersion, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Encodes the specified ServerProtocolVersion message, length delimited. Does not implicitly {@link ServerProtocolVersion.verify|verify} messages.
-     * @param message ServerProtocolVersion message or plain object to encode
-     * @param [writer] Writer to encode to
-     * @returns Writer
-     */
-    public static encodeDelimited(message: IServerProtocolVersion, writer?: $protobuf.Writer): $protobuf.Writer;
-
-    /**
-     * Decodes a ServerProtocolVersion message from the specified reader or buffer.
-     * @param reader Reader or buffer to decode from
-     * @param [length] Message length if known beforehand
-     * @returns ServerProtocolVersion
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): ServerProtocolVersion;
-
-    /**
-     * Decodes a ServerProtocolVersion message from the specified reader or buffer, length delimited.
-     * @param reader Reader or buffer to decode from
-     * @returns ServerProtocolVersion
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): ServerProtocolVersion;
-
-    /**
-     * Verifies a ServerProtocolVersion message.
-     * @param message Plain object to verify
-     * @returns `null` if valid, otherwise the reason why it is not
-     */
-    public static verify(message: { [k: string]: any }): (string|null);
-
-    /**
-     * Creates a ServerProtocolVersion message from a plain object. Also converts values to their respective internal types.
-     * @param object Plain object
-     * @returns ServerProtocolVersion
-     */
-    public static fromObject(object: { [k: string]: any }): ServerProtocolVersion;
-
-    /**
-     * Creates a plain object from a ServerProtocolVersion message. Also converts values to other types if specified.
-     * @param message ServerProtocolVersion
-     * @param [options] Conversion options
-     * @returns Plain object
-     */
-    public static toObject(message: ServerProtocolVersion, options?: $protobuf.IConversionOptions): { [k: string]: any };
-
-    /**
-     * Converts this ServerProtocolVersion to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };

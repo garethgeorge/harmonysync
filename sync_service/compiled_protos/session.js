@@ -146,7 +146,7 @@ $root.SessionService = (function() {
      * @typedef joinRoomCallback
      * @type {function}
      * @param {Error|null} error Error, if any
-     * @param {JoinRoomResp} [response] JoinRoomResp
+     * @param {RoomInfo} [response] RoomInfo
      */
 
     /**
@@ -155,12 +155,12 @@ $root.SessionService = (function() {
      * @memberof SessionService
      * @instance
      * @param {IJoinRoomReq} request JoinRoomReq message or plain object
-     * @param {SessionService.joinRoomCallback} callback Node-style callback called with the error, if any, and JoinRoomResp
+     * @param {SessionService.joinRoomCallback} callback Node-style callback called with the error, if any, and RoomInfo
      * @returns {undefined}
      * @variation 1
      */
     Object.defineProperty(SessionService.prototype.joinRoom = function joinRoom(request, callback) {
-        return this.rpcCall(joinRoom, $root.JoinRoomReq, $root.JoinRoomResp, request, callback);
+        return this.rpcCall(joinRoom, $root.JoinRoomReq, $root.RoomInfo, request, callback);
     }, "name", { value: "joinRoom" });
 
     /**
@@ -169,7 +169,7 @@ $root.SessionService = (function() {
      * @memberof SessionService
      * @instance
      * @param {IJoinRoomReq} request JoinRoomReq message or plain object
-     * @returns {Promise<JoinRoomResp>} Promise
+     * @returns {Promise<RoomInfo>} Promise
      * @variation 2
      */
 
@@ -376,6 +376,7 @@ $root.ServerProtocolVersion = (function() {
      * @exports IServerProtocolVersion
      * @interface IServerProtocolVersion
      * @property {string|null} [version] ServerProtocolVersion version
+     * @property {string|null} [motd] ServerProtocolVersion motd
      */
 
     /**
@@ -400,6 +401,14 @@ $root.ServerProtocolVersion = (function() {
      * @instance
      */
     ServerProtocolVersion.prototype.version = "";
+
+    /**
+     * ServerProtocolVersion motd.
+     * @member {string} motd
+     * @memberof ServerProtocolVersion
+     * @instance
+     */
+    ServerProtocolVersion.prototype.motd = "";
 
     /**
      * Creates a new ServerProtocolVersion instance using the specified properties.
@@ -427,6 +436,8 @@ $root.ServerProtocolVersion = (function() {
             writer = $Writer.create();
         if (message.version != null && Object.hasOwnProperty.call(message, "version"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.version);
+        if (message.motd != null && Object.hasOwnProperty.call(message, "motd"))
+            writer.uint32(/* id 2, wireType 2 =*/18).string(message.motd);
         return writer;
     };
 
@@ -463,6 +474,9 @@ $root.ServerProtocolVersion = (function() {
             switch (tag >>> 3) {
             case 1:
                 message.version = reader.string();
+                break;
+            case 2:
+                message.motd = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -502,6 +516,9 @@ $root.ServerProtocolVersion = (function() {
         if (message.version != null && message.hasOwnProperty("version"))
             if (!$util.isString(message.version))
                 return "version: string expected";
+        if (message.motd != null && message.hasOwnProperty("motd"))
+            if (!$util.isString(message.motd))
+                return "motd: string expected";
         return null;
     };
 
@@ -519,6 +536,8 @@ $root.ServerProtocolVersion = (function() {
         var message = new $root.ServerProtocolVersion();
         if (object.version != null)
             message.version = String(object.version);
+        if (object.motd != null)
+            message.motd = String(object.motd);
         return message;
     };
 
@@ -535,10 +554,14 @@ $root.ServerProtocolVersion = (function() {
         if (!options)
             options = {};
         var object = {};
-        if (options.defaults)
+        if (options.defaults) {
             object.version = "";
+            object.motd = "";
+        }
         if (message.version != null && message.hasOwnProperty("version"))
             object.version = message.version;
+        if (message.motd != null && message.hasOwnProperty("motd"))
+            object.motd = message.motd;
         return object;
     };
 
@@ -942,7 +965,6 @@ $root.JoinRoomReq = (function() {
      * @exports IJoinRoomReq
      * @interface IJoinRoomReq
      * @property {string|null} [id] JoinRoomReq id
-     * @property {string|null} [password] JoinRoomReq password
      */
 
     /**
@@ -967,14 +989,6 @@ $root.JoinRoomReq = (function() {
      * @instance
      */
     JoinRoomReq.prototype.id = "";
-
-    /**
-     * JoinRoomReq password.
-     * @member {string} password
-     * @memberof JoinRoomReq
-     * @instance
-     */
-    JoinRoomReq.prototype.password = "";
 
     /**
      * Creates a new JoinRoomReq instance using the specified properties.
@@ -1002,8 +1016,6 @@ $root.JoinRoomReq = (function() {
             writer = $Writer.create();
         if (message.id != null && Object.hasOwnProperty.call(message, "id"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
-        if (message.password != null && Object.hasOwnProperty.call(message, "password"))
-            writer.uint32(/* id 2, wireType 2 =*/18).string(message.password);
         return writer;
     };
 
@@ -1040,9 +1052,6 @@ $root.JoinRoomReq = (function() {
             switch (tag >>> 3) {
             case 1:
                 message.id = reader.string();
-                break;
-            case 2:
-                message.password = reader.string();
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -1082,9 +1091,6 @@ $root.JoinRoomReq = (function() {
         if (message.id != null && message.hasOwnProperty("id"))
             if (!$util.isString(message.id))
                 return "id: string expected";
-        if (message.password != null && message.hasOwnProperty("password"))
-            if (!$util.isString(message.password))
-                return "password: string expected";
         return null;
     };
 
@@ -1102,8 +1108,6 @@ $root.JoinRoomReq = (function() {
         var message = new $root.JoinRoomReq();
         if (object.id != null)
             message.id = String(object.id);
-        if (object.password != null)
-            message.password = String(object.password);
         return message;
     };
 
@@ -1120,14 +1124,10 @@ $root.JoinRoomReq = (function() {
         if (!options)
             options = {};
         var object = {};
-        if (options.defaults) {
+        if (options.defaults)
             object.id = "";
-            object.password = "";
-        }
         if (message.id != null && message.hasOwnProperty("id"))
             object.id = message.id;
-        if (message.password != null && message.hasOwnProperty("password"))
-            object.password = message.password;
         return object;
     };
 
@@ -1143,245 +1143,6 @@ $root.JoinRoomReq = (function() {
     };
 
     return JoinRoomReq;
-})();
-
-$root.JoinRoomResp = (function() {
-
-    /**
-     * Properties of a JoinRoomResp.
-     * @exports IJoinRoomResp
-     * @interface IJoinRoomResp
-     * @property {string|null} [error] JoinRoomResp error
-     * @property {IRoomInfo|null} [roomInfo] JoinRoomResp roomInfo
-     */
-
-    /**
-     * Constructs a new JoinRoomResp.
-     * @exports JoinRoomResp
-     * @classdesc Represents a JoinRoomResp.
-     * @implements IJoinRoomResp
-     * @constructor
-     * @param {IJoinRoomResp=} [properties] Properties to set
-     */
-    function JoinRoomResp(properties) {
-        if (properties)
-            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                if (properties[keys[i]] != null)
-                    this[keys[i]] = properties[keys[i]];
-    }
-
-    /**
-     * JoinRoomResp error.
-     * @member {string} error
-     * @memberof JoinRoomResp
-     * @instance
-     */
-    JoinRoomResp.prototype.error = "";
-
-    /**
-     * JoinRoomResp roomInfo.
-     * @member {IRoomInfo|null|undefined} roomInfo
-     * @memberof JoinRoomResp
-     * @instance
-     */
-    JoinRoomResp.prototype.roomInfo = null;
-
-    // OneOf field names bound to virtual getters and setters
-    var $oneOfFields;
-
-    /**
-     * JoinRoomResp status.
-     * @member {"error"|"roomInfo"|undefined} status
-     * @memberof JoinRoomResp
-     * @instance
-     */
-    Object.defineProperty(JoinRoomResp.prototype, "status", {
-        get: $util.oneOfGetter($oneOfFields = ["error", "roomInfo"]),
-        set: $util.oneOfSetter($oneOfFields)
-    });
-
-    /**
-     * Creates a new JoinRoomResp instance using the specified properties.
-     * @function create
-     * @memberof JoinRoomResp
-     * @static
-     * @param {IJoinRoomResp=} [properties] Properties to set
-     * @returns {JoinRoomResp} JoinRoomResp instance
-     */
-    JoinRoomResp.create = function create(properties) {
-        return new JoinRoomResp(properties);
-    };
-
-    /**
-     * Encodes the specified JoinRoomResp message. Does not implicitly {@link JoinRoomResp.verify|verify} messages.
-     * @function encode
-     * @memberof JoinRoomResp
-     * @static
-     * @param {IJoinRoomResp} message JoinRoomResp message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    JoinRoomResp.encode = function encode(message, writer) {
-        if (!writer)
-            writer = $Writer.create();
-        if (message.error != null && Object.hasOwnProperty.call(message, "error"))
-            writer.uint32(/* id 1, wireType 2 =*/10).string(message.error);
-        if (message.roomInfo != null && Object.hasOwnProperty.call(message, "roomInfo"))
-            $root.RoomInfo.encode(message.roomInfo, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
-        return writer;
-    };
-
-    /**
-     * Encodes the specified JoinRoomResp message, length delimited. Does not implicitly {@link JoinRoomResp.verify|verify} messages.
-     * @function encodeDelimited
-     * @memberof JoinRoomResp
-     * @static
-     * @param {IJoinRoomResp} message JoinRoomResp message or plain object to encode
-     * @param {$protobuf.Writer} [writer] Writer to encode to
-     * @returns {$protobuf.Writer} Writer
-     */
-    JoinRoomResp.encodeDelimited = function encodeDelimited(message, writer) {
-        return this.encode(message, writer).ldelim();
-    };
-
-    /**
-     * Decodes a JoinRoomResp message from the specified reader or buffer.
-     * @function decode
-     * @memberof JoinRoomResp
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @param {number} [length] Message length if known beforehand
-     * @returns {JoinRoomResp} JoinRoomResp
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    JoinRoomResp.decode = function decode(reader, length) {
-        if (!(reader instanceof $Reader))
-            reader = $Reader.create(reader);
-        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.JoinRoomResp();
-        while (reader.pos < end) {
-            var tag = reader.uint32();
-            switch (tag >>> 3) {
-            case 1:
-                message.error = reader.string();
-                break;
-            case 2:
-                message.roomInfo = $root.RoomInfo.decode(reader, reader.uint32());
-                break;
-            default:
-                reader.skipType(tag & 7);
-                break;
-            }
-        }
-        return message;
-    };
-
-    /**
-     * Decodes a JoinRoomResp message from the specified reader or buffer, length delimited.
-     * @function decodeDelimited
-     * @memberof JoinRoomResp
-     * @static
-     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-     * @returns {JoinRoomResp} JoinRoomResp
-     * @throws {Error} If the payload is not a reader or valid buffer
-     * @throws {$protobuf.util.ProtocolError} If required fields are missing
-     */
-    JoinRoomResp.decodeDelimited = function decodeDelimited(reader) {
-        if (!(reader instanceof $Reader))
-            reader = new $Reader(reader);
-        return this.decode(reader, reader.uint32());
-    };
-
-    /**
-     * Verifies a JoinRoomResp message.
-     * @function verify
-     * @memberof JoinRoomResp
-     * @static
-     * @param {Object.<string,*>} message Plain object to verify
-     * @returns {string|null} `null` if valid, otherwise the reason why it is not
-     */
-    JoinRoomResp.verify = function verify(message) {
-        if (typeof message !== "object" || message === null)
-            return "object expected";
-        var properties = {};
-        if (message.error != null && message.hasOwnProperty("error")) {
-            properties.status = 1;
-            if (!$util.isString(message.error))
-                return "error: string expected";
-        }
-        if (message.roomInfo != null && message.hasOwnProperty("roomInfo")) {
-            if (properties.status === 1)
-                return "status: multiple values";
-            properties.status = 1;
-            {
-                var error = $root.RoomInfo.verify(message.roomInfo);
-                if (error)
-                    return "roomInfo." + error;
-            }
-        }
-        return null;
-    };
-
-    /**
-     * Creates a JoinRoomResp message from a plain object. Also converts values to their respective internal types.
-     * @function fromObject
-     * @memberof JoinRoomResp
-     * @static
-     * @param {Object.<string,*>} object Plain object
-     * @returns {JoinRoomResp} JoinRoomResp
-     */
-    JoinRoomResp.fromObject = function fromObject(object) {
-        if (object instanceof $root.JoinRoomResp)
-            return object;
-        var message = new $root.JoinRoomResp();
-        if (object.error != null)
-            message.error = String(object.error);
-        if (object.roomInfo != null) {
-            if (typeof object.roomInfo !== "object")
-                throw TypeError(".JoinRoomResp.roomInfo: object expected");
-            message.roomInfo = $root.RoomInfo.fromObject(object.roomInfo);
-        }
-        return message;
-    };
-
-    /**
-     * Creates a plain object from a JoinRoomResp message. Also converts values to other types if specified.
-     * @function toObject
-     * @memberof JoinRoomResp
-     * @static
-     * @param {JoinRoomResp} message JoinRoomResp
-     * @param {$protobuf.IConversionOptions} [options] Conversion options
-     * @returns {Object.<string,*>} Plain object
-     */
-    JoinRoomResp.toObject = function toObject(message, options) {
-        if (!options)
-            options = {};
-        var object = {};
-        if (message.error != null && message.hasOwnProperty("error")) {
-            object.error = message.error;
-            if (options.oneofs)
-                object.status = "error";
-        }
-        if (message.roomInfo != null && message.hasOwnProperty("roomInfo")) {
-            object.roomInfo = $root.RoomInfo.toObject(message.roomInfo, options);
-            if (options.oneofs)
-                object.status = "roomInfo";
-        }
-        return object;
-    };
-
-    /**
-     * Converts this JoinRoomResp to JSON.
-     * @function toJSON
-     * @memberof JoinRoomResp
-     * @instance
-     * @returns {Object.<string,*>} JSON object
-     */
-    JoinRoomResp.prototype.toJSON = function toJSON() {
-        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
-    };
-
-    return JoinRoomResp;
 })();
 
 $root.SendMessageReq = (function() {
@@ -1764,8 +1525,7 @@ $root.UserList = (function() {
      * Properties of a UserList.
      * @exports IUserList
      * @interface IUserList
-     * @property {Array.<IUserInfo>|null} [addedUsers] UserList addedUsers
-     * @property {Array.<number>|null} [droppedUserIds] UserList droppedUserIds
+     * @property {Array.<IUserInfo>|null} [users] UserList users
      */
 
     /**
@@ -1777,8 +1537,7 @@ $root.UserList = (function() {
      * @param {IUserList=} [properties] Properties to set
      */
     function UserList(properties) {
-        this.addedUsers = [];
-        this.droppedUserIds = [];
+        this.users = [];
         if (properties)
             for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
                 if (properties[keys[i]] != null)
@@ -1786,20 +1545,12 @@ $root.UserList = (function() {
     }
 
     /**
-     * UserList addedUsers.
-     * @member {Array.<IUserInfo>} addedUsers
+     * UserList users.
+     * @member {Array.<IUserInfo>} users
      * @memberof UserList
      * @instance
      */
-    UserList.prototype.addedUsers = $util.emptyArray;
-
-    /**
-     * UserList droppedUserIds.
-     * @member {Array.<number>} droppedUserIds
-     * @memberof UserList
-     * @instance
-     */
-    UserList.prototype.droppedUserIds = $util.emptyArray;
+    UserList.prototype.users = $util.emptyArray;
 
     /**
      * Creates a new UserList instance using the specified properties.
@@ -1825,15 +1576,9 @@ $root.UserList = (function() {
     UserList.encode = function encode(message, writer) {
         if (!writer)
             writer = $Writer.create();
-        if (message.addedUsers != null && message.addedUsers.length)
-            for (var i = 0; i < message.addedUsers.length; ++i)
-                $root.UserInfo.encode(message.addedUsers[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
-        if (message.droppedUserIds != null && message.droppedUserIds.length) {
-            writer.uint32(/* id 2, wireType 2 =*/18).fork();
-            for (var i = 0; i < message.droppedUserIds.length; ++i)
-                writer.int32(message.droppedUserIds[i]);
-            writer.ldelim();
-        }
+        if (message.users != null && message.users.length)
+            for (var i = 0; i < message.users.length; ++i)
+                $root.UserInfo.encode(message.users[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         return writer;
     };
 
@@ -1869,19 +1614,9 @@ $root.UserList = (function() {
             var tag = reader.uint32();
             switch (tag >>> 3) {
             case 1:
-                if (!(message.addedUsers && message.addedUsers.length))
-                    message.addedUsers = [];
-                message.addedUsers.push($root.UserInfo.decode(reader, reader.uint32()));
-                break;
-            case 2:
-                if (!(message.droppedUserIds && message.droppedUserIds.length))
-                    message.droppedUserIds = [];
-                if ((tag & 7) === 2) {
-                    var end2 = reader.uint32() + reader.pos;
-                    while (reader.pos < end2)
-                        message.droppedUserIds.push(reader.int32());
-                } else
-                    message.droppedUserIds.push(reader.int32());
+                if (!(message.users && message.users.length))
+                    message.users = [];
+                message.users.push($root.UserInfo.decode(reader, reader.uint32()));
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -1918,21 +1653,14 @@ $root.UserList = (function() {
     UserList.verify = function verify(message) {
         if (typeof message !== "object" || message === null)
             return "object expected";
-        if (message.addedUsers != null && message.hasOwnProperty("addedUsers")) {
-            if (!Array.isArray(message.addedUsers))
-                return "addedUsers: array expected";
-            for (var i = 0; i < message.addedUsers.length; ++i) {
-                var error = $root.UserInfo.verify(message.addedUsers[i]);
+        if (message.users != null && message.hasOwnProperty("users")) {
+            if (!Array.isArray(message.users))
+                return "users: array expected";
+            for (var i = 0; i < message.users.length; ++i) {
+                var error = $root.UserInfo.verify(message.users[i]);
                 if (error)
-                    return "addedUsers." + error;
+                    return "users." + error;
             }
-        }
-        if (message.droppedUserIds != null && message.hasOwnProperty("droppedUserIds")) {
-            if (!Array.isArray(message.droppedUserIds))
-                return "droppedUserIds: array expected";
-            for (var i = 0; i < message.droppedUserIds.length; ++i)
-                if (!$util.isInteger(message.droppedUserIds[i]))
-                    return "droppedUserIds: integer[] expected";
         }
         return null;
     };
@@ -1949,22 +1677,15 @@ $root.UserList = (function() {
         if (object instanceof $root.UserList)
             return object;
         var message = new $root.UserList();
-        if (object.addedUsers) {
-            if (!Array.isArray(object.addedUsers))
-                throw TypeError(".UserList.addedUsers: array expected");
-            message.addedUsers = [];
-            for (var i = 0; i < object.addedUsers.length; ++i) {
-                if (typeof object.addedUsers[i] !== "object")
-                    throw TypeError(".UserList.addedUsers: object expected");
-                message.addedUsers[i] = $root.UserInfo.fromObject(object.addedUsers[i]);
+        if (object.users) {
+            if (!Array.isArray(object.users))
+                throw TypeError(".UserList.users: array expected");
+            message.users = [];
+            for (var i = 0; i < object.users.length; ++i) {
+                if (typeof object.users[i] !== "object")
+                    throw TypeError(".UserList.users: object expected");
+                message.users[i] = $root.UserInfo.fromObject(object.users[i]);
             }
-        }
-        if (object.droppedUserIds) {
-            if (!Array.isArray(object.droppedUserIds))
-                throw TypeError(".UserList.droppedUserIds: array expected");
-            message.droppedUserIds = [];
-            for (var i = 0; i < object.droppedUserIds.length; ++i)
-                message.droppedUserIds[i] = object.droppedUserIds[i] | 0;
         }
         return message;
     };
@@ -1982,19 +1703,12 @@ $root.UserList = (function() {
         if (!options)
             options = {};
         var object = {};
-        if (options.arrays || options.defaults) {
-            object.addedUsers = [];
-            object.droppedUserIds = [];
-        }
-        if (message.addedUsers && message.addedUsers.length) {
-            object.addedUsers = [];
-            for (var j = 0; j < message.addedUsers.length; ++j)
-                object.addedUsers[j] = $root.UserInfo.toObject(message.addedUsers[j], options);
-        }
-        if (message.droppedUserIds && message.droppedUserIds.length) {
-            object.droppedUserIds = [];
-            for (var j = 0; j < message.droppedUserIds.length; ++j)
-                object.droppedUserIds[j] = message.droppedUserIds[j];
+        if (options.arrays || options.defaults)
+            object.users = [];
+        if (message.users && message.users.length) {
+            object.users = [];
+            for (var j = 0; j < message.users.length; ++j)
+                object.users[j] = $root.UserInfo.toObject(message.users[j], options);
         }
         return object;
     };
@@ -2011,6 +1725,261 @@ $root.UserList = (function() {
     };
 
     return UserList;
+})();
+
+$root.UsersDiff = (function() {
+
+    /**
+     * Properties of a UsersDiff.
+     * @exports IUsersDiff
+     * @interface IUsersDiff
+     * @property {Array.<IUserInfo>|null} [addedUsers] UsersDiff addedUsers
+     * @property {Array.<number>|null} [droppedUsers] UsersDiff droppedUsers
+     */
+
+    /**
+     * Constructs a new UsersDiff.
+     * @exports UsersDiff
+     * @classdesc Represents a UsersDiff.
+     * @implements IUsersDiff
+     * @constructor
+     * @param {IUsersDiff=} [properties] Properties to set
+     */
+    function UsersDiff(properties) {
+        this.addedUsers = [];
+        this.droppedUsers = [];
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * UsersDiff addedUsers.
+     * @member {Array.<IUserInfo>} addedUsers
+     * @memberof UsersDiff
+     * @instance
+     */
+    UsersDiff.prototype.addedUsers = $util.emptyArray;
+
+    /**
+     * UsersDiff droppedUsers.
+     * @member {Array.<number>} droppedUsers
+     * @memberof UsersDiff
+     * @instance
+     */
+    UsersDiff.prototype.droppedUsers = $util.emptyArray;
+
+    /**
+     * Creates a new UsersDiff instance using the specified properties.
+     * @function create
+     * @memberof UsersDiff
+     * @static
+     * @param {IUsersDiff=} [properties] Properties to set
+     * @returns {UsersDiff} UsersDiff instance
+     */
+    UsersDiff.create = function create(properties) {
+        return new UsersDiff(properties);
+    };
+
+    /**
+     * Encodes the specified UsersDiff message. Does not implicitly {@link UsersDiff.verify|verify} messages.
+     * @function encode
+     * @memberof UsersDiff
+     * @static
+     * @param {IUsersDiff} message UsersDiff message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    UsersDiff.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.addedUsers != null && message.addedUsers.length)
+            for (var i = 0; i < message.addedUsers.length; ++i)
+                $root.UserInfo.encode(message.addedUsers[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
+        if (message.droppedUsers != null && message.droppedUsers.length) {
+            writer.uint32(/* id 2, wireType 2 =*/18).fork();
+            for (var i = 0; i < message.droppedUsers.length; ++i)
+                writer.int32(message.droppedUsers[i]);
+            writer.ldelim();
+        }
+        return writer;
+    };
+
+    /**
+     * Encodes the specified UsersDiff message, length delimited. Does not implicitly {@link UsersDiff.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof UsersDiff
+     * @static
+     * @param {IUsersDiff} message UsersDiff message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    UsersDiff.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a UsersDiff message from the specified reader or buffer.
+     * @function decode
+     * @memberof UsersDiff
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {UsersDiff} UsersDiff
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    UsersDiff.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.UsersDiff();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                if (!(message.addedUsers && message.addedUsers.length))
+                    message.addedUsers = [];
+                message.addedUsers.push($root.UserInfo.decode(reader, reader.uint32()));
+                break;
+            case 2:
+                if (!(message.droppedUsers && message.droppedUsers.length))
+                    message.droppedUsers = [];
+                if ((tag & 7) === 2) {
+                    var end2 = reader.uint32() + reader.pos;
+                    while (reader.pos < end2)
+                        message.droppedUsers.push(reader.int32());
+                } else
+                    message.droppedUsers.push(reader.int32());
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a UsersDiff message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof UsersDiff
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {UsersDiff} UsersDiff
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    UsersDiff.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a UsersDiff message.
+     * @function verify
+     * @memberof UsersDiff
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    UsersDiff.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.addedUsers != null && message.hasOwnProperty("addedUsers")) {
+            if (!Array.isArray(message.addedUsers))
+                return "addedUsers: array expected";
+            for (var i = 0; i < message.addedUsers.length; ++i) {
+                var error = $root.UserInfo.verify(message.addedUsers[i]);
+                if (error)
+                    return "addedUsers." + error;
+            }
+        }
+        if (message.droppedUsers != null && message.hasOwnProperty("droppedUsers")) {
+            if (!Array.isArray(message.droppedUsers))
+                return "droppedUsers: array expected";
+            for (var i = 0; i < message.droppedUsers.length; ++i)
+                if (!$util.isInteger(message.droppedUsers[i]))
+                    return "droppedUsers: integer[] expected";
+        }
+        return null;
+    };
+
+    /**
+     * Creates a UsersDiff message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof UsersDiff
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {UsersDiff} UsersDiff
+     */
+    UsersDiff.fromObject = function fromObject(object) {
+        if (object instanceof $root.UsersDiff)
+            return object;
+        var message = new $root.UsersDiff();
+        if (object.addedUsers) {
+            if (!Array.isArray(object.addedUsers))
+                throw TypeError(".UsersDiff.addedUsers: array expected");
+            message.addedUsers = [];
+            for (var i = 0; i < object.addedUsers.length; ++i) {
+                if (typeof object.addedUsers[i] !== "object")
+                    throw TypeError(".UsersDiff.addedUsers: object expected");
+                message.addedUsers[i] = $root.UserInfo.fromObject(object.addedUsers[i]);
+            }
+        }
+        if (object.droppedUsers) {
+            if (!Array.isArray(object.droppedUsers))
+                throw TypeError(".UsersDiff.droppedUsers: array expected");
+            message.droppedUsers = [];
+            for (var i = 0; i < object.droppedUsers.length; ++i)
+                message.droppedUsers[i] = object.droppedUsers[i] | 0;
+        }
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a UsersDiff message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof UsersDiff
+     * @static
+     * @param {UsersDiff} message UsersDiff
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    UsersDiff.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.arrays || options.defaults) {
+            object.addedUsers = [];
+            object.droppedUsers = [];
+        }
+        if (message.addedUsers && message.addedUsers.length) {
+            object.addedUsers = [];
+            for (var j = 0; j < message.addedUsers.length; ++j)
+                object.addedUsers[j] = $root.UserInfo.toObject(message.addedUsers[j], options);
+        }
+        if (message.droppedUsers && message.droppedUsers.length) {
+            object.droppedUsers = [];
+            for (var j = 0; j < message.droppedUsers.length; ++j)
+                object.droppedUsers[j] = message.droppedUsers[j];
+        }
+        return object;
+    };
+
+    /**
+     * Converts this UsersDiff to JSON.
+     * @function toJSON
+     * @memberof UsersDiff
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    UsersDiff.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return UsersDiff;
 })();
 
 $root.UserInfo = (function() {
@@ -2417,6 +2386,7 @@ $root.RoomInfo = (function() {
      * @exports IRoomInfo
      * @interface IRoomInfo
      * @property {string|null} [id] RoomInfo id
+     * @property {IUserList|null} [userList] RoomInfo userList
      */
 
     /**
@@ -2441,6 +2411,14 @@ $root.RoomInfo = (function() {
      * @instance
      */
     RoomInfo.prototype.id = "";
+
+    /**
+     * RoomInfo userList.
+     * @member {IUserList|null|undefined} userList
+     * @memberof RoomInfo
+     * @instance
+     */
+    RoomInfo.prototype.userList = null;
 
     /**
      * Creates a new RoomInfo instance using the specified properties.
@@ -2468,6 +2446,8 @@ $root.RoomInfo = (function() {
             writer = $Writer.create();
         if (message.id != null && Object.hasOwnProperty.call(message, "id"))
             writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
+        if (message.userList != null && Object.hasOwnProperty.call(message, "userList"))
+            $root.UserList.encode(message.userList, writer.uint32(/* id 2, wireType 2 =*/18).fork()).ldelim();
         return writer;
     };
 
@@ -2504,6 +2484,9 @@ $root.RoomInfo = (function() {
             switch (tag >>> 3) {
             case 1:
                 message.id = reader.string();
+                break;
+            case 2:
+                message.userList = $root.UserList.decode(reader, reader.uint32());
                 break;
             default:
                 reader.skipType(tag & 7);
@@ -2543,6 +2526,11 @@ $root.RoomInfo = (function() {
         if (message.id != null && message.hasOwnProperty("id"))
             if (!$util.isString(message.id))
                 return "id: string expected";
+        if (message.userList != null && message.hasOwnProperty("userList")) {
+            var error = $root.UserList.verify(message.userList);
+            if (error)
+                return "userList." + error;
+        }
         return null;
     };
 
@@ -2560,6 +2548,11 @@ $root.RoomInfo = (function() {
         var message = new $root.RoomInfo();
         if (object.id != null)
             message.id = String(object.id);
+        if (object.userList != null) {
+            if (typeof object.userList !== "object")
+                throw TypeError(".RoomInfo.userList: object expected");
+            message.userList = $root.UserList.fromObject(object.userList);
+        }
         return message;
     };
 
@@ -2576,10 +2569,14 @@ $root.RoomInfo = (function() {
         if (!options)
             options = {};
         var object = {};
-        if (options.defaults)
+        if (options.defaults) {
             object.id = "";
+            object.userList = null;
+        }
         if (message.id != null && message.hasOwnProperty("id"))
             object.id = message.id;
+        if (message.userList != null && message.hasOwnProperty("userList"))
+            object.userList = $root.UserList.toObject(message.userList, options);
         return object;
     };
 

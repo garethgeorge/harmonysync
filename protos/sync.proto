@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 service ServerSyncService {
-  rpc getServerVersion(Empty) returns (ServerProtocolVersion) {}
   rpc setSyncState(SetSyncStateReq) returns (SetSyncStateResp) {};
   rpc requestResync(RequestResyncReq) returns (Empty) {};
 }
@@ -12,11 +11,6 @@ service ClientSyncService {
 
 message Empty {
 }
-
-message ServerProtocolVersion {
-  string version = 1;
-}
-
 
 message SyncState {
   int32 seq_no = 1; // sync state sequence number --

@@ -10,14 +10,14 @@ jobs:
       - uses: actions/setup-node@v2-beta
         with:
           node-version: "12"
-      - name: npm install for sync_chrome_ext 
+      - name: npm install for sync_chrome_ext
         run: npm install
         working-directory: sync_chrome_ext
-      - name: npm install for sync_service 
-        run: npm install 
+      - name: npm install for sync_service
+        run: npm install
         working-directory: sync_service
-      - name: start sync service in background 
-        run: npm start & 
+      - name: start sync service in background
+        run: npm start &
         working-directory: sync_service
       - name: run sync_chrome_ext tests
         run: npm test
