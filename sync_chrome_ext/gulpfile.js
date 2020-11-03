@@ -7,6 +7,8 @@ const fs = require("fs");
 const exorcist = require("exorcist");
 const mkdirp = require("mkdirp");
 const watchify = require("watchify");
+const mergeStream = require("merge-stream");
+const source = require("vinyl-source-stream");
 
 // declare some utilities
 const getJsonFile = (path) => {
@@ -16,32 +18,59 @@ const getJsonFile = (path) => {
 //
 // configure browserify
 //
+
 mkdirp.sync("./build/bundle");
-const b = browserify({
+const bContentScript = browserify({
   debug: true,
   entries: ["./src/contentscripts/index.ts"],
   cache: {},
   packageCache: {},
 });
-b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
-b.transform(babelify, {
+bContentScript.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
+bContentScript.transform(babelify, {
+  presets: ["env", "react"],
+});
+
+const bBackgroundScript = browserify({
+  debug: true,
+  entries: ["./src/backgroundscripts/index.ts"],
+  cache: {},
+  packageCache: {},
+});
+bBackgroundScript.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
+bBackgroundScript.transform(babelify, {
   presets: ["env", "react"],
 });
 
 // provide gulp tasks for bundle and watched bundler
 function bundle() {
-  return b
-    .bundle()
-    .pipe(exorcist("./build/bundle/contentscript_bundle.js.map"))
-    .pipe(fs.createWriteStream("./build/bundle/contentscript_bundle.js"));
+  return mergeStream(
+    bContentScript
+      .bundle()
+      .pipe(exorcist("./build/bundle/contentscript_bundle.js.map"))
+      .pipe(source("./build/bundle/contentscript_bundle.js"))
+      .pipe(gulp.dest("./")),
+    bBackgroundScript
+      .bundle()
+      .pipe(exorcist("./build/bundle/backgroundscript_bundle.js.map"))
+      .pipe(source("./build/bundle/backgroundscript_bundle.js"))
+      .pipe(gulp.dest("./"))
+  );
 }
 
 exports.watch = function watch_task() {
-  b.plugin(watchify);
-  b.on("update", () => {
+  bContentScript.plugin(watchify);
+  bContentScript.on("update", () => {
     const res = bundle();
     return res;
   });
+
+  bBackgroundScript.plugin(watchify);
+  bBackgroundScript.on("update", () => {
+    const res = bundle();
+    return res;
+  });
+
   return bundle();
 };
 

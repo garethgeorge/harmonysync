@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "an extension for syncing video playback on popular Video On Demand streaming sites",
   "manifest_version": 2,
+  "background": {
+    "scripts": ["./build/bundle/backgroundscript_bundle.js"],
+    "persistent": false
+  },
   "content_scripts": [
     {
       "matches": ["*://*/*"],

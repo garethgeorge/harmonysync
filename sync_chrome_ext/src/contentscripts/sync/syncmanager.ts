@@ -61,9 +61,8 @@ export default class SyncManager extends EventEmitter {
 
     this.rpcMediator.addMethod(
       "setSyncState",
-      sync_pb.SyncState.decode,
-      sync_pb.Empty.encode,
-      sync_pb.Empty.verify,
+      sync_pb.SyncState,
+      sync_pb.Empty,
       async (syncState) => {
         debug("got new SyncState from server: %o", syncState);
         this.serverSyncState = sync_pb.SyncState.create(syncState);

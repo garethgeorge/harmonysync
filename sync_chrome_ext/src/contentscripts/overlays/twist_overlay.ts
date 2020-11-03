@@ -7,8 +7,8 @@ export default class TwistSyncOverlay {
   }
 
   getAnimeInfo() {
-    const titleDiv = document.getElementsByClassName("series-title").item(0);
-    const episodeDiv = document
+    const titleDiv = this.window.document.getElementsByClassName("series-title").item(0);
+    const episodeDiv = this.window.document
       .getElementsByClassName("series-episode")
       .item(0);
 
