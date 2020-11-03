@@ -1,11 +1,11 @@
 import SocketIOClient from "socket.io-client";
 import SyncManager, {
   areStatesClose,
-} from "../../src/contentscripts/sync/syncmanager";
+} from "../../src/content_scripts/sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
-import SocketTransport from "../../src/contentscripts/transports/socket_transport";
-import { SessionManager } from "../../src/contentscripts/session";
-import { Player } from "../../src/contentscripts/sync/player";
+import SocketTransport from "../../src/content_scripts/transports/socket_transport";
+import { SessionManager } from "../../src/content_scripts/session";
+import { Player } from "../../src/content_scripts/sync/player";
 
 export interface MockUser {
   socket: SocketIOClient.Socket | null;

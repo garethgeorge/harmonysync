@@ -1,4 +1,4 @@
-import { Player } from "../../src/contentscripts/sync/player";
+import { Player } from "../../src/content_scripts/sync/player";
 
 export default class MockPlayer implements Player {
   private position: number = 0;

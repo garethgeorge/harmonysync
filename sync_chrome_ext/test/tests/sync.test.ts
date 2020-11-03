@@ -2,7 +2,7 @@ import { expect } from "chai";
 import SocketIOClient from "socket.io-client";
 import SyncManager, {
   areStatesClose,
-} from "../../src/contentscripts/sync/syncmanager";
+} from "../../src/content_scripts/sync/syncmanager";
 import MockPlayer from "../mocks/mock_player";
 import { createMockUser, MockUser } from "../mocks/mock_user";
 
