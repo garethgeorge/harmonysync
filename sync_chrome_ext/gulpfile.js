@@ -7,6 +7,9 @@ const fs = require("fs");
 const exorcist = require("exorcist");
 const mkdirp = require("mkdirp");
 const watchify = require("watchify");
+const mergeStream = require("merge-stream");
+const source = require("vinyl-source-stream");
+const { reduceEachLeadingCommentRange } = require("typescript");
 
 // declare some utilities
 const getJsonFile = (path) => {
@@ -16,34 +19,57 @@ const getJsonFile = (path) => {
 //
 // configure browserify
 //
-mkdirp.sync("./build/bundle");
-const b = browserify({
-  debug: true,
-  entries: ["./src/contentscripts/index.ts"],
-  cache: {},
-  packageCache: {},
-});
-b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
-b.transform(babelify, {
-  presets: ["env", "react"],
+const scripts = [
+  {
+    entries: ["./src/content_scripts/index.ts"],
+    output: "./build/bundle/content_script_bundle.js",
+  },
+  {
+    entries: ["./src/background_scripts/index.ts"],
+    output: "./build/bundle/background_script_bundle.js",
+  },
+  {
+    entries: ["./src/menu/menu.tsx"],
+    output: "./build/bundle/menu_bundle.js",
+  },
+];
+
+scripts.forEach((script) => {
+  const b = browserify({
+    debug: true,
+    entries: script.entries,
+    cache: {},
+    packageCache: {},
+    plugin: [watchify],
+  });
+  b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
+  b.transform(babelify, {
+    presets: ["env", "react"],
+  });
+  b.on("update", bundle);
+  script.b = b;
 });
 
+mkdirp.sync("./build/bundle");
 // provide gulp tasks for bundle and watched bundler
 function bundle() {
-  return b
-    .bundle()
-    .pipe(exorcist("./build/bundle/contentscript_bundle.js.map"))
-    .pipe(fs.createWriteStream("./build/bundle/contentscript_bundle.js"));
-}
+  const makeBuildStream = (script) => {
+    console.log("creating bundler stream for " + script.entries.join(", "));
+    return script.b
+      .bundle()
+      .on("error", console.error)
+      .on("end", () => {
+        console.log("done bundling " + script.entries.join(","));
+      })
+      .pipe(exorcist(script.output + ".map"))
+      .pipe(source(script.output))
+      .pipe(gulp.dest("./"));
+  };
 
-exports.watch = function watch_task() {
-  b.plugin(watchify);
-  b.on("update", () => {
-    const res = bundle();
-    return res;
+  return scripts.map(makeBuildStream).reduce((prev, cur) => {
+    return mergeStream(prev, cur);
   });
-  return bundle();
-};
+}
 
 exports.browserify = function browserify_task() {
   return bundle();

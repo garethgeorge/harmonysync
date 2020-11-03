@@ -17,7 +17,7 @@ class Room extends EventEmitter {
 
     this.mediator.onEvent(
       "update_users",
-      sesh_pb.UsersDiff.decode,
+      sesh_pb.UsersDiff,
       (userList) => {
         // add the new users to the user list
         this.users.push(...userList.addedUsers);

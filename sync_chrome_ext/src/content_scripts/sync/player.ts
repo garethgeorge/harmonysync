@@ -35,7 +35,7 @@ export class BasicWebVideoPlayer implements Player {
   }
 
   setState(playing: boolean, position: number) {
-    if (playing != this.isPlaying()) {
+    if (playing !== this.isPlaying()) {
       if (playing) {
         this.video.play();
       } else {
