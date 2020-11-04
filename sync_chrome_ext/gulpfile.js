@@ -9,7 +9,8 @@ const mkdirp = require("mkdirp");
 const watchify = require("watchify");
 const mergeStream = require("merge-stream");
 const source = require("vinyl-source-stream");
-const { reduceEachLeadingCommentRange } = require("typescript");
+const envify = require("envify/custom");
+const process = require("process");
 
 // declare some utilities
 const getJsonFile = (path) => {
@@ -43,6 +44,9 @@ scripts.forEach((script) => {
     packageCache: {},
     plugin: [watchify],
   });
+  b.transform(envify({
+    NODE_ENV: process.env.NODE_ENV || "prod"
+  }))
   b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
   b.transform(babelify, {
     presets: ["env", "react"],
@@ -67,7 +71,7 @@ function bundle() {
   };
 
   const merged = mergeStream();
-  scripts.map(makeBuildStream).forEach(stream => {
+  scripts.map(makeBuildStream).forEach((stream) => {
     merged.add(stream);
   });
   return merged;

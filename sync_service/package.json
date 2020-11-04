@@ -9,7 +9,7 @@
   "author": "thelastpenguin",
   "license": "ISC",
   "devDependencies": {
-    "ts-node-dev": "^1.0.0-pre.62"
+    "ts-node-dev": "^1.0.0"
   },
   "dependencies": {
     "@types/chai-as-promised": "^7.1.3",
@@ -19,13 +19,13 @@
     "@types/socket.io": "^2.1.11",
     "chai-as-promised": "^7.1.1",
     "debug": "^4.2.0",
-    "engine.io": "^4.0.0",
+    "engine.io": "^4.0.1",
     "express": "^4.17.1",
     "gulp": "^4.0.2",
     "gulp-protobuf": "^1.0.1",
     "protobufjs": "^6.10.1",
-    "protorpcjs": "^1.1.1",
+    "protorpcjs": "^1.1.6",
     "socket.io": "^2.3.0",
-    "typescript": "^4.0.2"
+    "typescript": "^4.0.5"
   }
 }

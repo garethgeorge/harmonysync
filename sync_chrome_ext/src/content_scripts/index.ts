@@ -6,6 +6,25 @@ import { RPCMediator } from "protorpcjs";
 import SocketTransport from "./transports/socket_transport";
 import { SessionManager } from "./session";
 
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.command === "getSyncStatus") {
+    console.log("got getSyncStatus request");
+    sendResponse({
+      injected: true,
+      mode: "idk"
+    });
+  }
+});
+
+(window as any).createLobby = () => {
+  console.log("creating lobby");
+};
+
+(window as any).joinLobby = () => {
+  console.log("joining lobby");
+};
+
+
 setTimeout(() => {
   const overlays: [typeof Overlay] = [TestOverlay];
 
@@ -35,4 +54,4 @@ setTimeout(() => {
     const syncManager = new SyncManager(mediator, playerWrapper);
     const sessionManager = new SessionManager(mediator);
   }
-}, 2000);
+}, 100 * 10000);

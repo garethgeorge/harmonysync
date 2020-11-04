@@ -34,6 +34,20 @@ export class SessionService extends $protobuf.rpc.Service {
     public getServerVersion(request: IEmpty): Promise<ServerProtocolVersion>;
 
     /**
+     * Calls ping.
+     * @param request Empty message or plain object
+     * @param callback Node-style callback called with the error, if any, and Empty
+     */
+    public ping(request: IEmpty, callback: SessionService.pingCallback): void;
+
+    /**
+     * Calls ping.
+     * @param request Empty message or plain object
+     * @returns Promise
+     */
+    public ping(request: IEmpty): Promise<Empty>;
+
+    /**
      * Calls auth.
      * @param request UserAuthReq message or plain object
      * @param callback Node-style callback called with the error, if any, and UserAuthResp
@@ -98,6 +112,13 @@ export namespace SessionService {
      * @param [response] ServerProtocolVersion
      */
     type getServerVersionCallback = (error: (Error|null), response?: ServerProtocolVersion) => void;
+
+    /**
+     * Callback as used by {@link SessionService#ping}.
+     * @param error Error, if any
+     * @param [response] Empty
+     */
+    type pingCallback = (error: (Error|null), response?: Empty) => void;
 
     /**
      * Callback as used by {@link SessionService#auth}.
@@ -753,6 +774,96 @@ export class GetUserInfoReq implements IGetUserInfoReq {
 
     /**
      * Converts this GetUserInfoReq to JSON.
+     * @returns JSON object
+     */
+    public toJSON(): { [k: string]: any };
+}
+
+/** Properties of a PongResp. */
+export interface IPongResp {
+
+    /** PongResp serverLoad */
+    serverLoad?: (number|null);
+}
+
+/** Represents a PongResp. */
+export class PongResp implements IPongResp {
+
+    /**
+     * Constructs a new PongResp.
+     * @param [properties] Properties to set
+     */
+    constructor(properties?: IPongResp);
+
+    /** PongResp serverLoad. */
+    public serverLoad: number;
+
+    /**
+     * Creates a new PongResp instance using the specified properties.
+     * @param [properties] Properties to set
+     * @returns PongResp instance
+     */
+    public static create(properties?: IPongResp): PongResp;
+
+    /**
+     * Encodes the specified PongResp message. Does not implicitly {@link PongResp.verify|verify} messages.
+     * @param message PongResp message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encode(message: IPongResp, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Encodes the specified PongResp message, length delimited. Does not implicitly {@link PongResp.verify|verify} messages.
+     * @param message PongResp message or plain object to encode
+     * @param [writer] Writer to encode to
+     * @returns Writer
+     */
+    public static encodeDelimited(message: IPongResp, writer?: $protobuf.Writer): $protobuf.Writer;
+
+    /**
+     * Decodes a PongResp message from the specified reader or buffer.
+     * @param reader Reader or buffer to decode from
+     * @param [length] Message length if known beforehand
+     * @returns PongResp
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): PongResp;
+
+    /**
+     * Decodes a PongResp message from the specified reader or buffer, length delimited.
+     * @param reader Reader or buffer to decode from
+     * @returns PongResp
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): PongResp;
+
+    /**
+     * Verifies a PongResp message.
+     * @param message Plain object to verify
+     * @returns `null` if valid, otherwise the reason why it is not
+     */
+    public static verify(message: { [k: string]: any }): (string|null);
+
+    /**
+     * Creates a PongResp message from a plain object. Also converts values to their respective internal types.
+     * @param object Plain object
+     * @returns PongResp
+     */
+    public static fromObject(object: { [k: string]: any }): PongResp;
+
+    /**
+     * Creates a plain object from a PongResp message. Also converts values to other types if specified.
+     * @param message PongResp
+     * @param [options] Conversion options
+     * @returns Plain object
+     */
+    public static toObject(message: PongResp, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+    /**
+     * Converts this PongResp to JSON.
      * @returns JSON object
      */
     public toJSON(): { [k: string]: any };

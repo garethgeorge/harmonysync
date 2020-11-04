@@ -75,6 +75,39 @@ $root.SessionService = (function() {
      */
 
     /**
+     * Callback as used by {@link SessionService#ping}.
+     * @memberof SessionService
+     * @typedef pingCallback
+     * @type {function}
+     * @param {Error|null} error Error, if any
+     * @param {Empty} [response] Empty
+     */
+
+    /**
+     * Calls ping.
+     * @function ping
+     * @memberof SessionService
+     * @instance
+     * @param {IEmpty} request Empty message or plain object
+     * @param {SessionService.pingCallback} callback Node-style callback called with the error, if any, and Empty
+     * @returns {undefined}
+     * @variation 1
+     */
+    Object.defineProperty(SessionService.prototype.ping = function ping(request, callback) {
+        return this.rpcCall(ping, $root.Empty, $root.Empty, request, callback);
+    }, "name", { value: "ping" });
+
+    /**
+     * Calls ping.
+     * @function ping
+     * @memberof SessionService
+     * @instance
+     * @param {IEmpty} request Empty message or plain object
+     * @returns {Promise<Empty>} Promise
+     * @variation 2
+     */
+
+    /**
      * Callback as used by {@link SessionService#auth}.
      * @memberof SessionService
      * @typedef authCallback
@@ -1517,6 +1550,193 @@ $root.GetUserInfoReq = (function() {
     };
 
     return GetUserInfoReq;
+})();
+
+$root.PongResp = (function() {
+
+    /**
+     * Properties of a PongResp.
+     * @exports IPongResp
+     * @interface IPongResp
+     * @property {number|null} [serverLoad] PongResp serverLoad
+     */
+
+    /**
+     * Constructs a new PongResp.
+     * @exports PongResp
+     * @classdesc Represents a PongResp.
+     * @implements IPongResp
+     * @constructor
+     * @param {IPongResp=} [properties] Properties to set
+     */
+    function PongResp(properties) {
+        if (properties)
+            for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
+                if (properties[keys[i]] != null)
+                    this[keys[i]] = properties[keys[i]];
+    }
+
+    /**
+     * PongResp serverLoad.
+     * @member {number} serverLoad
+     * @memberof PongResp
+     * @instance
+     */
+    PongResp.prototype.serverLoad = 0;
+
+    /**
+     * Creates a new PongResp instance using the specified properties.
+     * @function create
+     * @memberof PongResp
+     * @static
+     * @param {IPongResp=} [properties] Properties to set
+     * @returns {PongResp} PongResp instance
+     */
+    PongResp.create = function create(properties) {
+        return new PongResp(properties);
+    };
+
+    /**
+     * Encodes the specified PongResp message. Does not implicitly {@link PongResp.verify|verify} messages.
+     * @function encode
+     * @memberof PongResp
+     * @static
+     * @param {IPongResp} message PongResp message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PongResp.encode = function encode(message, writer) {
+        if (!writer)
+            writer = $Writer.create();
+        if (message.serverLoad != null && Object.hasOwnProperty.call(message, "serverLoad"))
+            writer.uint32(/* id 1, wireType 0 =*/8).int32(message.serverLoad);
+        return writer;
+    };
+
+    /**
+     * Encodes the specified PongResp message, length delimited. Does not implicitly {@link PongResp.verify|verify} messages.
+     * @function encodeDelimited
+     * @memberof PongResp
+     * @static
+     * @param {IPongResp} message PongResp message or plain object to encode
+     * @param {$protobuf.Writer} [writer] Writer to encode to
+     * @returns {$protobuf.Writer} Writer
+     */
+    PongResp.encodeDelimited = function encodeDelimited(message, writer) {
+        return this.encode(message, writer).ldelim();
+    };
+
+    /**
+     * Decodes a PongResp message from the specified reader or buffer.
+     * @function decode
+     * @memberof PongResp
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @param {number} [length] Message length if known beforehand
+     * @returns {PongResp} PongResp
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PongResp.decode = function decode(reader, length) {
+        if (!(reader instanceof $Reader))
+            reader = $Reader.create(reader);
+        var end = length === undefined ? reader.len : reader.pos + length, message = new $root.PongResp();
+        while (reader.pos < end) {
+            var tag = reader.uint32();
+            switch (tag >>> 3) {
+            case 1:
+                message.serverLoad = reader.int32();
+                break;
+            default:
+                reader.skipType(tag & 7);
+                break;
+            }
+        }
+        return message;
+    };
+
+    /**
+     * Decodes a PongResp message from the specified reader or buffer, length delimited.
+     * @function decodeDelimited
+     * @memberof PongResp
+     * @static
+     * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
+     * @returns {PongResp} PongResp
+     * @throws {Error} If the payload is not a reader or valid buffer
+     * @throws {$protobuf.util.ProtocolError} If required fields are missing
+     */
+    PongResp.decodeDelimited = function decodeDelimited(reader) {
+        if (!(reader instanceof $Reader))
+            reader = new $Reader(reader);
+        return this.decode(reader, reader.uint32());
+    };
+
+    /**
+     * Verifies a PongResp message.
+     * @function verify
+     * @memberof PongResp
+     * @static
+     * @param {Object.<string,*>} message Plain object to verify
+     * @returns {string|null} `null` if valid, otherwise the reason why it is not
+     */
+    PongResp.verify = function verify(message) {
+        if (typeof message !== "object" || message === null)
+            return "object expected";
+        if (message.serverLoad != null && message.hasOwnProperty("serverLoad"))
+            if (!$util.isInteger(message.serverLoad))
+                return "serverLoad: integer expected";
+        return null;
+    };
+
+    /**
+     * Creates a PongResp message from a plain object. Also converts values to their respective internal types.
+     * @function fromObject
+     * @memberof PongResp
+     * @static
+     * @param {Object.<string,*>} object Plain object
+     * @returns {PongResp} PongResp
+     */
+    PongResp.fromObject = function fromObject(object) {
+        if (object instanceof $root.PongResp)
+            return object;
+        var message = new $root.PongResp();
+        if (object.serverLoad != null)
+            message.serverLoad = object.serverLoad | 0;
+        return message;
+    };
+
+    /**
+     * Creates a plain object from a PongResp message. Also converts values to other types if specified.
+     * @function toObject
+     * @memberof PongResp
+     * @static
+     * @param {PongResp} message PongResp
+     * @param {$protobuf.IConversionOptions} [options] Conversion options
+     * @returns {Object.<string,*>} Plain object
+     */
+    PongResp.toObject = function toObject(message, options) {
+        if (!options)
+            options = {};
+        var object = {};
+        if (options.defaults)
+            object.serverLoad = 0;
+        if (message.serverLoad != null && message.hasOwnProperty("serverLoad"))
+            object.serverLoad = message.serverLoad;
+        return object;
+    };
+
+    /**
+     * Converts this PongResp to JSON.
+     * @function toJSON
+     * @memberof PongResp
+     * @instance
+     * @returns {Object.<string,*>} JSON object
+     */
+    PongResp.prototype.toJSON = function toJSON() {
+        return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
+    };
+
+    return PongResp;
 })();
 
 $root.UserList = (function() {
