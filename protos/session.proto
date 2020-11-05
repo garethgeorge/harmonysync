@@ -4,6 +4,7 @@ service SessionService {
   rpc getServerVersion(Empty) returns (ServerProtocolVersion) {};
 
   // general actions
+  rpc ping(Empty) returns (Empty) {};
   rpc auth(UserAuthReq) returns (UserAuthResp) {};
   rpc createRoom(Empty) returns (RoomInfo) {};
   rpc joinRoom(JoinRoomReq) returns (RoomInfo) {};
@@ -41,6 +42,10 @@ message GetUserInfoReq {
   int32 id = 1;
 }
 
+message PongResp {
+  int32 server_load = 1;
+}
+
 // events 
 message UserList {
   repeated UserInfo users = 1;
@@ -63,6 +68,8 @@ message VideoInfo {
 }
 
 message RoomInfo {
+  // TODO: its a bit jank that user id's are integers, room id's are strings
+  // switch both to use integer id's and add passwords to rooms
   string id = 1;
   UserList user_list = 2;
 }

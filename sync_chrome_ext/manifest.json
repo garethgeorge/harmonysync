@@ -8,12 +8,6 @@
     "scripts": ["./build/bundle/background_script_bundle.js"],
     "persistent": false
   },
-  "content_scripts": [
-    {
-      "matches": ["*://*/*"],
-      "js": ["./build/bundle/content_script_bundle.js"]
-    }
-  ],
   "browser_action": {
     "default_popup": "./src/menu/menu.html"
   }

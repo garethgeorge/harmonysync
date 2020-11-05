@@ -3,7 +3,7 @@ import SyncManager, {
   areStatesClose,
 } from "../../src/content_scripts/sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
-import SocketTransport from "../../src/content_scripts/transports/socket_transport";
+import SocketTransport from "../../src/common/lib/transports/socket_transport";
 import { SessionManager } from "../../src/content_scripts/session";
 import { Player } from "../../src/content_scripts/sync/player";
 

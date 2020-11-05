@@ -3,8 +3,42 @@ import TestOverlay from "./overlays/test_overlay";
 import SocketIOClient from "socket.io-client";
 import SyncManager from "./sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
-import SocketTransport from "./transports/socket_transport";
+import SocketTransport from "../common/lib/transports/socket_transport";
 import { SessionManager } from "./session";
+
+console.log("[content script] loading content script!");
+
+
+(window as any).createLobby = () => {
+  console.log("creating lobby");
+
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("chrome.runtime.onMessage got message: ", request);
+    if (request.message === "getSyncStatus") {
+      console.log("getSyncStatus request");
+      sendResponse({
+        injected: true,
+        mode: "createLobby",
+      });
+    }
+  });
+};
+
+(window as any).joinLobby = () => {
+  console.log("joining lobby");
+
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    console.log("chrome.runtime.onMessage got message: ", request);
+    if (request.message === "getSyncStatus") {
+      console.log("getSyncStatus request");
+      sendResponse({
+        injected: true,
+        mode: "joinLobby",
+      });
+    }
+  });
+};
+
 
 setTimeout(() => {
   const overlays: [typeof Overlay] = [TestOverlay];
@@ -35,4 +69,4 @@ setTimeout(() => {
     const syncManager = new SyncManager(mediator, playerWrapper);
     const sessionManager = new SessionManager(mediator);
   }
-}, 2000);
+}, 100 * 10000);

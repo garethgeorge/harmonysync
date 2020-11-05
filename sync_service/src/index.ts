@@ -15,7 +15,7 @@ const server = http.createServer(app);
 const io = SocketIO(server);
 
 class Room {
-  public static allRooms: {[id: string]: Room} = {};
+  public static allRooms: { [id: string]: Room } = {};
 
   private id: string;
   private users: User[] = [];
@@ -45,18 +45,20 @@ class Room {
 
     // notify all existing users of the new user
     const newUserEvent = sesh_pb.UsersDiff.encode({
-      addedUsers: [
-        sesh_pb.UserInfo.create({
-          id: newUser.id,
-          name: newUser.name,
-        }),
-      ],
-      droppedUsers: [],
+      
     }).finish();
 
     for (const user of this.users) {
       if (user != newUser)
-        user.mediator.sendEvent("update_users", newUserEvent);
+        user.mediator.sendEvent("update_users", sesh_pb.UsersDiff, {
+          addedUsers: [
+            sesh_pb.UserInfo.create({
+              id: newUser.id,
+              name: newUser.name,
+            }),
+          ],
+          droppedUsers: [],
+        });
     }
   }
   /**
@@ -69,12 +71,10 @@ class Room {
       return user !== toRemove;
     });
 
-    const removedUserEvent = sesh_pb.UsersDiff.encode({
-      droppedUsers: [toRemove.id],
-    }).finish();
-
     for (const user of this.users) {
-      user.mediator.sendEvent("update_users", removedUserEvent);
+      user.mediator.sendEvent("update_users", sesh_pb.UsersDiff, {
+        droppedUsers: [toRemove.id],
+      });
     }
   }
 
@@ -115,21 +115,22 @@ class Room {
     return sesh_pb.RoomInfo.create({
       id: this.id,
       userList: {
-        users: this.users.map(user => {
+        users: this.users.map((user) => {
           return sesh_pb.UserInfo.create({
             id: user.id,
             name: user.name,
-          })
-        })
-      }
+          });
+        }),
+      },
     });
   }
 }
 
 class User {
   private static nextUserId = 0;
+  private static numConnectedUsers = 0;
 
-  public id: number = User.nextUserId++;
+  public id: number;
   public name: string | null = null;
 
   public room: Room = null;
@@ -137,6 +138,9 @@ class User {
   public syncRpcClient: sync_pb.ClientSyncService;
 
   constructor(private socket: SocketIO.Socket) {
+    this.id = User.nextUserId++;
+    User.numConnectedUsers++;
+
     this.mediator = new RPCMediator(new SocketTransport(socket));
     this.syncRpcClient = new sync_pb.ClientSyncService(
       this.mediator.makeRpcClientImpl() as any
@@ -151,6 +155,7 @@ class User {
       if (this.room) {
         this.room.removeUser(this);
       }
+      User.numConnectedUsers--;
     });
 
     this.addMethods();
@@ -162,10 +167,20 @@ class User {
 
   addMethods() {
     this.mediator.addMethod(
+      "ping",
+      sesh_pb.Empty,
+      sesh_pb.PongResp,
+      async (request) => {
+        return {
+          serverLoad: User.numConnectedUsers + (Math.random() * 10 - 5)
+        }
+      }
+    )
+
+    this.mediator.addMethod(
       "auth",
-      sesh_pb.UserAuthReq.decode,
-      sesh_pb.UserAuthResp.encode,
-      sesh_pb.UserAuthResp.verify,
+      sesh_pb.UserAuthReq,
+      sesh_pb.UserAuthResp,
       async (request) => {
         if (this.isAuthed()) {
           throw new Error("already authed");
@@ -184,12 +199,11 @@ class User {
         };
       }
     );
-    
+
     this.mediator.addMethod(
       "createRoom",
-      sesh_pb.Empty.decode,
-      sesh_pb.RoomInfo.encode,
-      sesh_pb.RoomInfo.verify,
+      sesh_pb.Empty,
+      sesh_pb.RoomInfo,
       async (request) => {
         if (!this.isAuthed()) throw new Error("auth required");
         if (this.room) throw new Error("already in room");
@@ -200,7 +214,7 @@ class User {
         setImmediate(() => {
           // send the initial sync state to the client as a fire and forget
           this.syncRpcClient.setSyncState(room.getSyncState());
-        })
+        });
 
         return room.toRoomInfo();
       }
@@ -208,13 +222,12 @@ class User {
 
     this.mediator.addMethod(
       "joinRoom",
-      sesh_pb.JoinRoomReq.decode,
-      sesh_pb.RoomInfo.encode,
-      sesh_pb.RoomInfo.verify,
+      sesh_pb.JoinRoomReq,
+      sesh_pb.RoomInfo,
       async (request) => {
         if (!this.isAuthed()) throw new Error("auth required");
-        if (this.room) throw new Error("already in room")
-        
+        if (this.room) throw new Error("already in room");
+
         const room = Room.allRooms[request.id];
         if (!room) {
           throw new Error("room not found");
@@ -225,17 +238,16 @@ class User {
         setImmediate(() => {
           // send the initial sync state to the client as a fire and forget
           this.syncRpcClient.setSyncState(room.getSyncState());
-        })
+        });
 
         return room.toRoomInfo();
       }
-    )
+    );
 
     this.mediator.addMethod(
       "getServerVersion",
-      sesh_pb.Empty.decode,
-      sesh_pb.ServerProtocolVersion.encode,
-      sesh_pb.ServerProtocolVersion.verify,
+      sesh_pb.Empty,
+      sesh_pb.ServerProtocolVersion,
       async (request) => {
         return {
           version: version,
@@ -249,9 +261,8 @@ class User {
 
     this.mediator.addMethod(
       "setSyncState",
-      sync_pb.SetSyncStateReq.decode,
-      sync_pb.SetSyncStateResp.encode,
-      sync_pb.SetSyncStateResp.verify,
+      sync_pb.SetSyncStateReq,
+      sync_pb.SetSyncStateResp,
       async (request) => {
         if (!this.isAuthed()) throw new Error("auth required");
         if (!this.room) throw new Error("must first join a room");
@@ -275,9 +286,8 @@ class User {
 
     this.mediator.addMethod(
       "requestResync",
-      sync_pb.RequestResyncReq.decode,
-      sync_pb.Empty.encode,
-      sync_pb.Empty.verify,
+      sync_pb.RequestResyncReq,
+      sync_pb.Empty,
       async (request) => {
         if (!this.isAuthed()) {
           throw new Error("auth required");

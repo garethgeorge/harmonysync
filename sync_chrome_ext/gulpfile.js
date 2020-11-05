@@ -9,7 +9,8 @@ const mkdirp = require("mkdirp");
 const watchify = require("watchify");
 const mergeStream = require("merge-stream");
 const source = require("vinyl-source-stream");
-const { reduceEachLeadingCommentRange } = require("typescript");
+const envify = require("envify/custom");
+const process = require("process");
 
 // declare some utilities
 const getJsonFile = (path) => {
@@ -19,6 +20,7 @@ const getJsonFile = (path) => {
 //
 // configure browserify
 //
+mkdirp.sync("./build/bundle");
 const scripts = [
   {
     entries: ["./src/content_scripts/index.ts"],
@@ -42,6 +44,9 @@ scripts.forEach((script) => {
     packageCache: {},
     plugin: [watchify],
   });
+  b.transform(envify({
+    NODE_ENV: process.env.NODE_ENV || "prod"
+  }))
   b.plugin(tsify, getJsonFile("./tsconfig.json").compilerOptions);
   b.transform(babelify, {
     presets: ["env", "react"],
@@ -50,7 +55,6 @@ scripts.forEach((script) => {
   script.b = b;
 });
 
-mkdirp.sync("./build/bundle");
 // provide gulp tasks for bundle and watched bundler
 function bundle() {
   const makeBuildStream = (script) => {
@@ -66,9 +70,11 @@ function bundle() {
       .pipe(gulp.dest("./"));
   };
 
-  return scripts.map(makeBuildStream).reduce((prev, cur) => {
-    return mergeStream(prev, cur);
+  const merged = mergeStream();
+  scripts.map(makeBuildStream).forEach((stream) => {
+    merged.add(stream);
   });
+  return merged;
 }
 
 exports.browserify = function browserify_task() {
@@ -96,5 +102,4 @@ exports.protocts = function protoc_ts() {
 };
 
 exports.protos = gulp.series(exports.protocjs, exports.protocts);
-
 exports.default = gulp.series(exports.protos, exports.browserify);
