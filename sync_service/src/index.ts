@@ -45,18 +45,20 @@ class Room {
 
     // notify all existing users of the new user
     const newUserEvent = sesh_pb.UsersDiff.encode({
-      addedUsers: [
-        sesh_pb.UserInfo.create({
-          id: newUser.id,
-          name: newUser.name,
-        }),
-      ],
-      droppedUsers: [],
+      
     }).finish();
 
     for (const user of this.users) {
       if (user != newUser)
-        user.mediator.sendEvent("update_users", newUserEvent);
+        user.mediator.sendEvent("update_users", sesh_pb.UsersDiff, {
+          addedUsers: [
+            sesh_pb.UserInfo.create({
+              id: newUser.id,
+              name: newUser.name,
+            }),
+          ],
+          droppedUsers: [],
+        });
     }
   }
   /**
@@ -69,12 +71,10 @@ class Room {
       return user !== toRemove;
     });
 
-    const removedUserEvent = sesh_pb.UsersDiff.encode({
-      droppedUsers: [toRemove.id],
-    }).finish();
-
     for (const user of this.users) {
-      user.mediator.sendEvent("update_users", removedUserEvent);
+      user.mediator.sendEvent("update_users", sesh_pb.UsersDiff, {
+        droppedUsers: [toRemove.id],
+      });
     }
   }
 
