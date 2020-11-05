@@ -5,21 +5,15 @@ import {
   Box,
   Button,
   Checkbox,
-  Dialog,
-  DialogActions,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
   FormLabel,
   FormControl,
   FormGroup,
   FormControlLabel,
-  FormHelperText,
-  Slide,
 } from "@material-ui/core";
 import fancyStyle from "./gradientStyle";
-import syncServers from "../syncServers";
-import {getSyncStatus} from "./state";
+import syncServers from "../sync_servers";
+import sleep from "../common/lib/sleep";
+import {SyncStatus, getSyncStatus, modeStringsPastTense} from "../common/sync_status";
 
 console.log("Loaded menu.tsx");
 
@@ -45,21 +39,33 @@ const MainMenu = () => {
     ]
   );
 
-  let [syncStatus, setSyncStatus] = useState(null);
+  let [syncStatus, setSyncStatus] = useState({
+    injected: true,
+    mode: null,
+  } as SyncStatus);
+  
   useEffect(() => {
     console.log("requesting the sync status");
-    getSyncStatus().then((status) => {
-      setSyncStatus(status);
-    }).catch(() => {
-      alert("tab is not eligable for sync");
-    });
+    getSyncStatus()
+      .then((status) => {
+        if (!status) {
+          setSyncStatus({
+            injected: false,
+            mode: null,
+          });
+          return;
+        }
+        setSyncStatus(status as SyncStatus);
+      })
+      .catch((e) => {
+        alert("tab is not eligable for sync, " + e);
+      });
   }, []);
   let injected = syncStatus && syncStatus.injected;
 
   // dialogue state
-  const [dialogueIsOpen, setDialogueIsOpen] = useState(false);
   let content = null;
-  if (!syncStatus) {
+  if (!injected) {
     content = (
       <div>
         <p>Create or join a sync lobby to watch videos with your friends!</p>
@@ -68,16 +74,26 @@ const MainMenu = () => {
           color="primary"
           className={gradient1.root}
           style={{ width: "100%", marginBottom: ".5em" }}
-          onClick={() => {
+          disabled={!!syncStatus.mode}
+          onClick={async () => {
+            setSyncStatus({
+              injected: false,
+              mode: "injecting",
+            });
+
             chrome.tabs.executeScript({
-              file: "./build/bundle/content_script_bundle.js"
+              file: "./build/bundle/content_script_bundle.js",
             });
+            await sleep(50);
             chrome.tabs.executeScript({
-              code: "window.createLobby()"
+              code: "window.createLobby()",
             });
-            getSyncStatus().then(setSyncStatus).catch(() => {
-              alert("tab is not eligable for sync");
-            });
+            await sleep(50);
+            getSyncStatus()
+              .then(setSyncStatus)
+              .catch(() => {
+                alert("tab is not eligable for sync");
+              });
           }}
         >
           CREATE LOBBY
@@ -87,16 +103,24 @@ const MainMenu = () => {
           color="primary"
           className={gradient2.root}
           style={{ width: "100%" }}
+          disabled={!!syncStatus.mode}
           onClick={() => {
+            setSyncStatus({
+              injected: false,
+              mode: "injecting",
+            });
+
             chrome.tabs.executeScript({
-              file: "./build/bundle/content_script_bundle.js"
+              file: "./build/bundle/content_script_bundle.js",
             });
             chrome.tabs.executeScript({
-              code: "window.joinLobby()"
+              code: "window.joinLobby()",
             });
-            getSyncStatus().then(setSyncStatus).catch(() => {
-              alert("tab is not eligable for sync");
-            });
+            getSyncStatus()
+              .then(setSyncStatus)
+              .catch(() => {
+                alert("tab is not eligable for sync");
+              });
           }}
         >
           JOIN LOBBY
@@ -104,85 +128,47 @@ const MainMenu = () => {
       </div>
     );
   } else {
-    // lobby info is available
-    content = <p>Already {injected} lobby!</p>;
-  } 
+    content = <h2>Already {modeStringsPastTense[syncStatus.mode]}!</h2>;
+  }
 
   return (
-    <Box
-      bgcolor="background.paper"
-      style={{ width: "350px", height: dialogueIsOpen ? "500px" : undefined }}
-    >
+    <Box bgcolor="background.paper" style={{ width: "350px" }}>
       <h1>HarmonySync</h1>
       {content}
 
       <FormControl
-          required
-          component="fieldset"
-          className={formStyles.formControl}
-        >
-          <FormLabel component="legend">
-            Pick default synchronization server
-          </FormLabel>
-          <FormGroup>
-            {Object.entries(syncServers).map(([key, value], idx) => {
-              return (
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={value === defaultSyncServer}
-                      onChange={() => {
-                        // TODO: persist this to local storage or something :P
-                        setDefaultSyncServer(value);
-                      }}
-                      name={value}
-                      disabled={!!injected}
-                    />
-                  }
-                  label={key}
-                />
-              );
-            })}
-          </FormGroup>
-          {/* <FormHelperText>NOTE: this is required</FormHelperText> */}
-        </FormControl>
+        required
+        component="fieldset"
+        className={formStyles.formControl}
+      >
+        <FormLabel component="legend">
+          Pick default synchronization server
+        </FormLabel>
+        <FormGroup>
+          {Object.entries(syncServers).map(([key, value], idx) => {
+            return (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={value === defaultSyncServer}
+                    onChange={() => {
+                      // TODO: persist this to local storage or something :P
+                      setDefaultSyncServer(value);
+                    }}
+                    name={value}
+                    disabled={!!injected}
+                  />
+                }
+                label={key}
+              />
+            );
+          })}
+        </FormGroup>
+        {/* <FormHelperText>NOTE: this is required</FormHelperText> */}
+      </FormControl>
     </Box>
   );
 };
-
-/*
-const JoinLobbyDialogue = ({ visible, onClose, onJoinClicked }) => {
-  return (
-    <Dialog
-      open={visible}
-      onClose={onClose}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogTitle id="alert-dialog-title">{"CREATE LOBBY"}</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
-          Enter the ID of the lobby you would like to join
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Never mind
-        </Button>
-        <Button
-          onClick={() => {
-            onClose();
-          }}
-          color="primary"
-          autoFocus
-        >
-          Create
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-*/
 
 window.onload = () => {
   ReactDOM.render(<MainMenu />, document.getElementById("react-root"));
