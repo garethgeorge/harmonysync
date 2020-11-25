@@ -23,7 +23,7 @@ const getJsonFile = (path) => {
 mkdirp.sync("./build/bundle");
 const scripts = [
   {
-    entries: ["./src/content_scripts/index.ts"],
+    entries: ["./src/content_scripts/index.tsx"],
     output: "./build/bundle/content_script_bundle.js",
   },
   {

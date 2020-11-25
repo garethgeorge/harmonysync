@@ -5,9 +5,33 @@ import SyncManager from "./sync/syncmanager";
 import { RPCMediator } from "protorpcjs";
 import SocketTransport from "../common/lib/transports/socket_transport";
 import { SessionManager } from "./session";
+import React from "react";
+import ReactDOM from "react-dom";
+import PopupView from "./views/popup_view";
+import Button from "@material-ui/core/Button";
 
 console.log("[content script] loading content script!");
 
+const presentError = (message) => {
+  const ErrorDialogue = () => {
+    const [open, setOpen] = React.useState(true);
+
+    return (
+      <PopupView
+        isOpen={open}
+        onClose={setOpen.bind(null, false)}
+        title={"Error"}
+        message={message}
+        buttons={[]}
+      />
+    );
+  };
+
+  // inject our HTML
+  const newDiv = document.createElement("div");
+  document.body.appendChild(newDiv);
+  ReactDOM.render(<ErrorDialogue />, newDiv);
+}
 
 (window as any).createLobby = () => {
   console.log("creating lobby");
@@ -22,6 +46,45 @@ console.log("[content script] loading content script!");
       });
     }
   });
+
+  // inject our HTML
+  const newDiv = document.createElement("div");
+  document.body.appendChild(newDiv);
+
+  const createLobby = async () => {
+    const connectionInfo = connect();
+    if (!connectionInfo) {
+      return presentError("Failed to find a video element / initialize connection.");
+    }
+
+    const { syncManager, sessionManager } = connectionInfo;
+    try {
+      await sessionManager.createRoom();
+    } catch (e) {
+      presentError("Failed to create room.");
+      throw e;
+    }
+  };
+
+  const CreateLobbyView = () => {
+    const [open, setOpen] = React.useState(true);
+
+    return (
+      <PopupView
+        isOpen={open}
+        onClose={setOpen.bind(null, false)}
+        title={"CREATE LOBBY"}
+        message={"Would you like to create a lobby on this page?"}
+        buttons={[
+          <Button onClick={createLobby} color="primary">
+            Create
+          </Button>,
+        ]}
+      />
+    );
+  };
+
+  ReactDOM.render(<CreateLobbyView />, newDiv);
 };
 
 (window as any).joinLobby = () => {
@@ -37,10 +100,27 @@ console.log("[content script] loading content script!");
       });
     }
   });
+
+  // inject our HTML
+  const newDiv = document.createElement("div");
+  document.body.appendChild(newDiv);
+
+  let isOpen = true;
+  ReactDOM.render(
+    <PopupView
+      isOpen={isOpen}
+      onClose={() => {
+        isOpen = false;
+      }}
+      title={"CREATE LOBBY"}
+      message={"Would you like to create a lobby on this page?"}
+      buttons={[]}
+    />,
+    newDiv
+  );
 };
 
-
-setTimeout(() => {
+const connect = () => {
   const overlays: [typeof Overlay] = [TestOverlay];
 
   let overlay: Overlay = null;
@@ -68,5 +148,10 @@ setTimeout(() => {
     console.log("constructing the sync manager");
     const syncManager = new SyncManager(mediator, playerWrapper);
     const sessionManager = new SessionManager(mediator);
+    return {
+      syncManager,
+      sessionManager,
+    };
   }
-}, 100 * 10000);
+  return null;
+};

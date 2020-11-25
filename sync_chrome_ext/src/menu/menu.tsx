@@ -58,6 +58,7 @@ const MainMenu = () => {
         setSyncStatus(status as SyncStatus);
       })
       .catch((e) => {
+        console.error("caught error: ", e);
         alert("tab is not eligable for sync, " + e);
       });
   }, []);

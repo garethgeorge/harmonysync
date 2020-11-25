@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+service ContentScript {
+  rpc getStatus(Empty) returns (Status) {};
+  rpc joinedRoom(Status) returns (Empty) {};
+}
+
+// requests / responses
+message Empty {
+}
+
+message Status {
+  enum State {
+    NOT_INJECTED = 0;
+    INJECTED = 1;
+    INJECTION_FAILED = 2;
+  }
+
+  State state = 1;
+  string room_id = 2;
+}
